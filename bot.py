@@ -108,7 +108,7 @@ def check_time():
     global is_night_time
     global is_busy
     current_hour = now.hour
-    is_night_time = current_hour > 18 or current_hour <= 6
+    is_night_time = current_hour < 18 or current_hour >= 6
     is_busy = not is_night_time
     return [is_busy, is_night_time]
 
@@ -295,7 +295,7 @@ async def spontaneous_message_during_night():
 
     now = dt.datetime.now()
     current_hour = now.hour
-    is_night_time = current_hour > 18 or current_hour <= 6
+    is_night_time = current_hour < 18 or current_hour >= 6
 
     quotes = [
         "Ugh, boring.. where's everybody?",
@@ -320,7 +320,7 @@ async def spontaneous_message_during_busy():
 
     now = dt.datetime.now()
     current_hour = now.hour
-    is_night_time = current_hour > 18 or current_hour <= 6
+    is_night_time = current_hour < 18 or current_hour >= 6
     is_busy = not is_night_time
 
     quotes = [
