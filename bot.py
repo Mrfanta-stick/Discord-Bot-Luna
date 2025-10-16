@@ -349,7 +349,7 @@ async def spacefact(interaction: discord.Interaction):
     
     try:
         response = await get_space_fact_response(interaction.user.display_name, time_info)
-        await interaction.edit_original_response(response)
+        await interaction.edit_original_response(content = response)
     except Exception as e:
         print(f"Error in spacefact command: {e}")
         await interaction.followup.send("Oops! Something went wrong while fetching space facts. Try again later! 🌙")
