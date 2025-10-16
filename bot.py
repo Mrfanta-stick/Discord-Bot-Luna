@@ -345,11 +345,11 @@ async def spontaneous_message_during_busy():
 async def spacefact(interaction: discord.Interaction):
     time_info = check_time()
     
-    await interaction.response.defer()  # Shows "Luna is thinking..."
+    await interaction.response.send_message(f"Let me search through my garden of wisdom..")  # Shows "Luna is thinking..."
     
     try:
         response = await get_space_fact_response(interaction.user.display_name, time_info)
-        await interaction.followup.send(response)
+        await interaction.edit_original_response(response)
     except Exception as e:
         print(f"Error in spacefact command: {e}")
         await interaction.followup.send("Oops! Something went wrong while fetching space facts. Try again later! 🌙")
