@@ -379,7 +379,7 @@ class ZodiacSelect(discord.ui.Select):
         await interaction.response.defer()
         try:
             response = await generate_ai_response(
-                f"Acting as Luna, provide a short horoscope for {selected_zodiac}. Keep it mystical and moon-related, under 40 words.", 
+                f"Acting as Luna, provide a short horoscope for {selected_zodiac}. Keep it mystical and moon-related, under 30 words.", 
                 interaction.user.display_name, 
                 "horoscope", 
                 time_info
