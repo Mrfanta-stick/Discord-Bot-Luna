@@ -387,10 +387,32 @@ class ZodiacSelect(discord.ui.Select):
                 "horoscope", 
                 time_info
             )
-            await interaction.edit_original_response(content=f"🌟 **{selected_zodiac.capitalize()} Horoscope** 🌙\n\n{response}")
+            
+            # Check if AI response is None or empty
+            if response and response.strip():
+                await interaction.edit_original_response(content=f"🌟 **{selected_zodiac.capitalize()} Horoscope** 🌙\n\n{response}")
+            else:
+                # Fallback horoscope responses when AI fails
+                fallback_horoscopes = {
+                    "aries": "🔥 The moon's fire ignites your passion today. Bold moves await under the celestial glow! ♈",
+                    "taurus": "🌱 Luna's gentle light nurtures your stability. Ground yourself in moonbeams and prosper! ♉", 
+                    "gemini": "💫 The twin stars dance with Luna tonight. Communication flows like moonlight on water! ♊",
+                    "cancer": "🌙 Your lunar ruler shines brightest! Emotions run deep as the cosmic tides today. ♋",
+                    "leo": "👑 The moon crowns your natural radiance. Shine bright, lunar royalty calls to you! ♌",
+                    "virgo": "🌾 Luna's precision guides your path today. Perfect details emerge under her watchful gaze! ♍",
+                    "libra": "⚖️ The moon balances your scales today. Harmony flows through Luna's gentle influence! ♎",
+                    "scorpio": "🦂 Deep lunar mysteries call to your soul. Transform under the moon's powerful embrace! ♏",
+                    "sagittarius": "🏹 Luna's light guides your adventurous spirit. Aim high toward moonlit horizons! ♐",
+                    "capricorn": "🏔️ The moon climbs mountains with you today. Steady progress under celestial guidance! ♑",
+                    "aquarius": "🌊 Luna's waves of innovation flow through you. Unique ideas shine like moonbeams! ♒",
+                    "pisces": "🐟 The moon swims in your intuitive depths today. Dreams and reality merge beautifully! ♓"
+                }
+                fallback_response = fallback_horoscopes.get(selected_zodiac, "🌙 The cosmic energies are shifting... Luna whispers of good fortune ahead!")
+                await interaction.edit_original_response(content=f"🌟 **{selected_zodiac.capitalize()} Horoscope** 🌙\n\n{fallback_response}")
+                
         except Exception as e:
             print(f"Error in horoscope: {e}")
-            await interaction.followup.send("🌙 The stars are cloudy right now... try again later!")
+            await interaction.edit_original_response(content="🌙 The stars are cloudy right now... try again later!")
     
 class ZodiacView(discord.ui.View):
     def __init__(self):
