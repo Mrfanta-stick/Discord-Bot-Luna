@@ -200,6 +200,12 @@ async def on_message(message):
     elif any(re.search(rf'\b{space}\b', content) for space in space_topics):
         print(f"SPACE TOPIC detected: {content}")
         async with message.channel.typing():
+            ai_response = await generate_ai_response(content, message.author.display_name, "space_topic", time)
+        
+        if ai_response:
+            await message.channel.send(ai_response)
+        else:
+            # Fallback to space fact if AI fails
             response = await get_space_fact_response(message.author.display_name, time)
             await message.channel.send(response)
             
