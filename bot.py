@@ -376,23 +376,31 @@ class ZodiacSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         selected_zodiac = self.values[0]
         time_info = check_time()
-        await interaction.response.defer()
+        
+        # Respond immediately to avoid timeout
+        await interaction.response.send_message(f"🔮 Consulting the stars for {selected_zodiac.capitalize()}... 🌙", ephemeral=True)
+        
         try:
             response = await generate_ai_response(
-                f"Acting as Luna, provide a short horoscope for {selected_zodiac}. Keep it mystical and moon-related, under 30 words.", 
+                f"Acting as Luna, provide a short horoscope for {selected_zodiac}. Keep it mystical and moon-related, under 40 words.", 
                 interaction.user.display_name, 
                 "horoscope", 
                 time_info
             )
-            await interaction.followup.send(response)
+            await interaction.edit_original_response(content=f"🌟 **{selected_zodiac.capitalize()} Horoscope** 🌙\n\n{response}")
         except Exception as e:
             print(f"Error in horoscope: {e}")
             await interaction.followup.send("🌙 The stars are cloudy right now... try again later!")
     
 class ZodiacView(discord.ui.View):
     def __init__(self):
-        super().__init__()
+        super().__init__(timeout=300)  # 5 minute timeout
         self.add_item(ZodiacSelect())
+    
+    async def on_timeout(self):
+        # Disable all components when timeout occurs
+        for item in self.children:
+            item.disabled = True
 
 @bot.tree.command(name="horoscope", description="Get your daily horoscope based on your zodiac sign!")
 async def horoscope(interaction: discord.Interaction):
