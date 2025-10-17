@@ -82,9 +82,9 @@ async def generate_ai_response(user_message, user_name, conversation_type, mood_
         
         # Luna's consistent personality with mood variations
         if mood_type == "sassy":
-            personality = "moon spirit, sassy and playful when dealing with disrespect, but still wise"
+            personality = "moon spirit, sassy and playful when dealing with disrespect, but still wise mystical and sophisticated"
         else:
-            personality = "cheerful moon spirit, always energized by moon's presence worldwide, wise and mystical but playful"
+            personality = "cheerful moon spirit, always energized by moon's presence worldwide, wise, sophisticated and mystical but playful"
             
         prompt = f"Luna ({personality}): {user_name} said '{user_message}'. Reply briefly (under 30 words) as Luna:"
         
