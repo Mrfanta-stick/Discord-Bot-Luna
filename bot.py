@@ -141,7 +141,8 @@ async def get_space_fact_response(user_name):
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user}!")
-    spontaneous_message.start()
+    if random.random() < 0.01:
+        spontaneous_message.start()
 
 @bot.hybrid_command()
 async def sync(ctx: commands.context):
