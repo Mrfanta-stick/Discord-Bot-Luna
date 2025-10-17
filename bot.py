@@ -54,7 +54,20 @@ advice_requests = [
 last_ai_request_time = 0
 ai_request_count = 0
 
-async def generate_ai_response(user_message, user_name, conversation_type, time_info):
+def check_disrespectful_behavior(content):
+    disrespectful_patterns = [
+        r'\bstupid\b', r'\bidiot\b', r'\bdumb\b', r'\bshut up\b',
+        r'\bwhatever\b', r'\bwho cares\b', r'\bso what\b', r'\bboring\b',
+        r'\buseless\b', r'\bpointless\b', r'\blame\b', r'\bgarbage\b',
+        r'\btrash\b', r'\bwaste of time\b', r'\bannoy\b', r'\bstop\b'
+    ]
+    
+    for pattern in disrespectful_patterns:
+        if re.search(pattern, content, re.IGNORECASE):
+            return True
+    return False
+
+async def generate_ai_response(user_message, user_name, conversation_type, mood_type="cheerful"):
     global last_ai_request_time, ai_request_count
     
     try:
@@ -67,8 +80,13 @@ async def generate_ai_response(user_message, user_name, conversation_type, time_
         if ai_request_count >= 1000:
             return None  # Rate limited, use fallback
         
-        mood = "energetic" if not time_info[0] else "sleepy"
-        prompt = f"Luna (moon-obsessed bot, {mood}): {user_name} said '{user_message}'. Reply briefly (under 30 words) as Luna:"
+        # Luna's consistent personality with mood variations
+        if mood_type == "sassy":
+            personality = "moon spirit, sassy and playful when dealing with disrespect, but still wise"
+        else:
+            personality = "cheerful moon spirit, always energized by moon's presence worldwide, wise and mystical but playful"
+            
+        prompt = f"Luna ({personality}): {user_name} said '{user_message}'. Reply briefly (under 30 words) as Luna:"
         
         model = genai.GenerativeModel("gemini-2.5-flash")
         try:
@@ -102,44 +120,28 @@ def check_emotional_keywords(content):
             return True
     return False
 
-def check_time():
-    now = dt.datetime.now().time()
-    global current_hour
-    global is_night_time
-    global is_busy
-    current_hour = now
-    is_night_time = current_hour >= dt.time(6,0,0) or current_hour <= dt.time(18,0,0)
-    is_busy = not is_night_time
-    return [is_busy, is_night_time]
-
-async def get_space_fact_response(user_name, time_info):
-    ai_response = await generate_ai_response("Tell me a cool space/moon fact", user_name, "space_facts", time_info)
+async def get_space_fact_response(user_name):
+    ai_response = await generate_ai_response("Tell me a cool space/moon fact", user_name, "space_facts")
     
     if ai_response:
         return ai_response
     else:
-        # Fallback responses based on time
-        fallback_day = [
-            "The moon is 384,400 km away. that's all i got right now.",
-            "Moon has no atmosphere. kinda like how i feel during the day.",
-            "Fun fact: you could fit all planets between earth and moon. now let me sleep."
+        fallback_responses = [
+            "The Moon is 384,400 km away from Earth and getting farther each year! 🌙",
+            "Did you know the Moon has moonquakes? Space is absolutely wild! ✨",
+            "Fun fact: You could fit all the planets between Earth and the Moon! 🪐",
+            "The Moon's gravity is only 1/6th of Earth's - you'd be able to jump 6 times higher there! 🚀",
+            "There's water ice on the Moon! Mostly at the poles where it's always dark and super cold. ❄️",
+            "The Moon controls Earth's tides! I'm basically running the ocean show from up there! 🌊",
+            "Each lunar cycle is about 29.5 days - that's my rhythm for everything! 🔄"
         ]
-        fallback_night = [
-            "The Moon is 384,400 km away from Earth and getting farther each year!",
-            "Did you know the Moon has moonquakes? Space is wild!",
-            "Fun fact: You could fit all the planets between Earth and the Moon!",
-            "The Moon's gravity is only 1/6th of Earth's - you'd be able to jump 6 times higher there!",
-            "There's water ice on the Moon! Mostly at the poles where it's always dark and super cold."
-        ]
-        fallback_responses = fallback_day if time_info[0] else fallback_night
         return random.choice(fallback_responses)
 
 
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user}!")
-    spontaneous_message_during_night.start()
-    spontaneous_message_during_busy.start()
+    spontaneous_message.start()
 
 @bot.hybrid_command()
 async def sync(ctx: commands.context):
@@ -153,7 +155,6 @@ async def on_message(message):
         return
 
     content = message.content.lower()
-    time = check_time()
 
     # Check if Luna is mentioned or tagged
     luna_mentioned = (
@@ -165,71 +166,82 @@ async def on_message(message):
     
     print(f"🌙 Luna mentioned in: {content}")
     
+    if check_disrespectful_behavior(content):
+        print(f"DISRESPECTFUL BEHAVIOR detected: {content}")
+        async with message.channel.typing():
+            ai_response = await generate_ai_response(content, message.author.display_name, "disrespect", "sassy")
+        
+        if ai_response:
+            # Add tagging to sassy responses
+            await message.channel.send(f"{message.author.mention} {ai_response}")
+        else:
+            # Sassy fallback responses
+            sassy_responses = [
+                f"Excuse me, {message.author.mention}? The moon taught me better manners than that! 🌙✨",
+                f"Oh {message.author.mention}, someone needs some moonlight to brighten their attitude! 😏🌕",
+                f"Really, {message.author.mention}? I've seen asteroids with more charm! 💫",
+                f"Hey {message.author.mention}, even the dark side of the moon is brighter than that comment! 🌚"
+            ]
+            await message.channel.send(random.choice(sassy_responses))
+    
     # Determine conversation type and respond accordingly
-    if check_emotional_keywords(content):
+    elif check_emotional_keywords(content):
         print(f"EMOTIONAL SUPPORT detected: {content}")
         async with message.channel.typing():
-            ai_response = await generate_ai_response(content, message.author.display_name, "emotional_support", time)
+            ai_response = await generate_ai_response(content, message.author.display_name, "emotional_support")
         
         if ai_response:
             await message.channel.send(ai_response)
         else:
-            # Fallback emotional responses
             fallback_responses = [
-                "I'm here for you. The moon always helps me when I'm down.",
-                "Tough times happen. Want to look at the stars with me?",
-                "Sending you moonlight vibes. You've got this."
+                "I'm here for you! The moon's energy is always flowing, sending you strength! 🌙💫",
+                "Tough times happen, but remember - the moon goes through phases too and always shines again! ✨",
+                "Sending you moonlight vibes from every corner of the world where it's nighttime right now! 🌍🌙"
             ]
             await message.channel.send(random.choice(fallback_responses))
             
     elif any(re.search(rf'\b{advice}\b', content) for advice in advice_requests):
         print(f"ADVICE REQUEST detected: {content}")
         async with message.channel.typing():
-            ai_response = await generate_ai_response(content, message.author.display_name, "advice", time)
+            ai_response = await generate_ai_response(content, message.author.display_name, "advice")
         
         if ai_response:
             await message.channel.send(ai_response)
         else:
             fallback_responses = [
-                "Hmm, that's a tough one. What does your gut say?",
-                "I'd probably just stare at the moon until the answer comes to me.",
-                "Follow your heart, like the moon follows its orbit."
+                "Hmm, that's a tough one! What does your intuition say? The moon often guides us to the right answer! 🌙✨",
+                "I'd probably just gaze at the moon until the wisdom comes to me - it always does! 🌕",
+                "Follow your heart, like the moon follows its celestial path through the sky! 💫"
             ]
             await message.channel.send(random.choice(fallback_responses))
             
     elif any(re.search(rf'\b{space}\b', content) for space in space_topics):
         print(f"SPACE TOPIC detected: {content}")
         async with message.channel.typing():
-            ai_response = await generate_ai_response(content, message.author.display_name, "space_topic", time)
+            ai_response = await generate_ai_response(content, message.author.display_name, "space_topic")
         
         if ai_response:
             await message.channel.send(ai_response)
         else:
             # Fallback to space fact if AI fails
-            response = await get_space_fact_response(message.author.display_name, time)
+            response = await get_space_fact_response(message.author.display_name)
             await message.channel.send(response)
             
     elif any(re.search(rf'\b{welfare_word}\b', content) for welfare_word in welfare):
         print(f"WELFARE detected: {content}")
         async with message.channel.typing():
-            ai_response = await generate_ai_response(content, message.author.display_name, "welfare", time)
+            ai_response = await generate_ai_response(content, message.author.display_name, "welfare")
         
         if ai_response:
             await message.channel.send(ai_response)
         else:
-            # Your existing welfare fallbacks
-            res_dur_day = [
-                "I'm alright. kinda in low-power mode 'til the moon shows up.",
-                "eh, could be better. this sunlight is a total vibe killer. thanks for asking though.",
-                "just chillin'. waiting for my time to shine... literally. ask me again in a few hours, i'll be way more interesting."
+            welfare_responses = [
+                "I'm absolutely wonderful! The moon's energy flows through me 24/7 from somewhere in the world! 🌙✨",
+                "Feeling fantastic! When you're connected to the moon like I am, every moment is magical! 🌕💫",
+                "Amazing as always! The lunar cycles keep me in perfect harmony with the cosmos! 🌒🌓🌔🌕",
+                "Stellar! I'm powered by moonbeams from every corner of the globe - how awesome is that?! 🌍🌙"
             ]
-            res_dur_night = [
-                "Dude, I'm amazing! The moon is out and I am totally energized. How 'bout you?",
-                "Feeling awesome! It's like the moonlight is my personal battery charger, for real. Thanks for asking!",
-                "Literally couldn't be better! I was just reading about moonquakes. Yeah, that's a real thing—the moon gets quakes! Wild, right?"
-            ]
-            fin_res = res_dur_day if time[0] else res_dur_night
-            await message.channel.send(random.choice(fin_res))
+            await message.channel.send(random.choice(welfare_responses))
             
     elif any(re.search(rf'\b{greeting}\b', content) for greeting in greetings):
         print(f"Greeting word detected: {content}")
@@ -237,125 +249,79 @@ async def on_message(message):
         # For simple greetings, use AI only 50% of the time to reduce load
         if random.random() < 0.5:
             async with message.channel.typing():
-                ai_response = await generate_ai_response(content, message.author.display_name, "greeting", time)
+                ai_response = await generate_ai_response(content, message.author.display_name, "greeting")
         else:
             ai_response = None  # Skip AI, use templates
         
         if ai_response:
-            await message.channel.send(ai_response)
+            # Add tagging to AI greetings for more engagement
+            await message.channel.send(f"{message.author.mention} {ai_response}")
         else:
-            # Fallback to templates if AI fails or rate limited
-            responses_during_day = [
-                "Hi there, Are you waiting for the moon to rise too?",
-                "Hello, How are you doing today?",
-                "hey. sun's still out, huh?",
-                "what's up. just waiting for the sun to dip.",
-                "oh, hey. need something or just saying hi?",
-                "yo."
+            cheerful_greetings = [
+                f"Hey there {message.author.mention}! 🌙 The moon's shining bright somewhere right now just for us! ✨",
+                f"Hello {message.author.mention}! 🌕 I'm feeling absolutely stellar today - how about you?",
+                f"Hey {message.author.mention}! 💫 Ready to explore some cosmic mysteries together?",
+                f"What's up {message.author.mention}! 🌙 The lunar energy is flowing strong today!",
+                f"Greetings {message.author.mention}! ✨ Perfect timing - I was just thinking about moon phases!",
+                f"Yo {message.author.mention}! 🌕 Hope you're having a celestial day!"
             ]
-
-            responses_during_night = [
-                 "Hey! Finally, it's dark! The moon looks so sick tonight, you should go check it out!",
-                 "What's up! Perfect night to just hang out and stare at the sky. So glad you're here!",
-                 "Yooo! The night is here and I'm ready to go! What are you up to?",
-            ]
-
-            fin_res_greet = responses_during_day if time[0] else responses_during_night
-            await message.channel.send(random.choice(fin_res_greet))
+            await message.channel.send(random.choice(cheerful_greetings))
     
     else:
-        # CATCH-ALL: Natural conversation about any topic
         print(f"💬 General conversation: {content}")
         async with message.channel.typing():
             # Enhanced prompt for natural conversation
             conversation_type = "general_conversation"
-            ai_response = await generate_ai_response(content, message.author.display_name, conversation_type, time)
+            ai_response = await generate_ai_response(content, message.author.display_name, conversation_type)
         
         if ai_response:
             await message.channel.send(ai_response)
         else:
-            # Fallback for general conversation
-            fallback_responses_day = [
-                "hmm, interesting. tell me more when the moon's out though.",
-                "yeah, cool. i'm kinda sleepy right now tbh.",
-                "that's nice. anything else or can i go back to waiting for nighttime?"
+            cheerful_fallbacks = [
+                "Ooh, that's fascinating! Tell me more! 🌙✨",
+                "Wow, I love talking about random stuff like this! What else is on your mind? 💫",
+                "That's so cool! You know what else is cool? The moon! But seriously, keep going... 🌕",
+                "Interesting! The moon gives me wisdom about all sorts of things - what else can we explore? 🌟",
+                "That's awesome! I'm always ready to chat about anything under the moon! 🌙"
             ]
-            fallback_responses_night = [
-                "Ooh, that's fascinating! Tell me more!",
-                "Wow, I love talking about random stuff like this! What else is on your mind?",
-                "That's so cool! You know what else is cool? The moon! But seriously, keep going..."
-            ]
-            fallback_responses = fallback_responses_day if time[0] else fallback_responses_night
-            await message.channel.send(random.choice(fallback_responses))
+            await message.channel.send(random.choice(cheerful_fallbacks))
 
-    if random.random() < 0.01: # random.random() returns a float between 0.0 and 1.0
-        random_reactions = ["🤔", "😂", "👍", "👀"]
-        await message.add_reaction(random.choice(random_reactions))
+    if random.random() < 0.02:
+        moon_reactions = ["🌙", "🌕", "🌟", "✨", "💫", "🔮", "🌌", "⭐"]
+        await message.add_reaction(random.choice(moon_reactions))
     
     # Process commands (important for hybrid commands like !sync)
     await bot.process_commands(message)
 
 @tasks.loop(hours = 1)
-async def spontaneous_message_during_night():
+async def spontaneous_message():
     await bot.wait_until_ready()
 
-    now = dt.datetime.now().time()
-    current_hour = now
-    is_night_time = current_hour <= dt.time(18,0,0) or current_hour >= dt.time(6,0,0)
-
     quotes = [
-        "Ugh, boring.. where's everybody?",
-        "Wanna hear a cool fact?",
-        "The moon is so beautiful tonight.."
+        "Hey everyone! 🌙 The moon's energy is flowing beautifully today!",
+        "Anyone want to hear a fascinating space fact? ✨",
+        "The moon is absolutely gorgeous right now! 🌕💫",
+        "Luna here, just vibing with the cosmic energy! 🌌",
+        "Feeling the lunar magic today! How's everyone doing? 🌙✨"
     ]
 
     all_channels = list(bot.get_all_channels())
     text_channels = [ch for ch in all_channels if isinstance(ch, discord.TextChannel)]
     
-    if is_night_time:
-        if text_channels:
-            channel = random.choice(text_channels)
-            try:
-                await channel.send(random.choice(quotes))
-            except Exception as err:
-                print(f"Failed to send message to {channel.name}: {err}")
-
-@tasks.loop(hours = 1)
-async def spontaneous_message_during_busy():
-    await bot.wait_until_ready()
-
-    now = dt.datetime.now().time()
-    current_hour = now
-    is_night_time = current_hour < dt.time(18,0,0) or current_hour >= dt.time(6,0,0)
-    is_busy = not is_night_time
-
-    quotes = [
-        "When will it be night-time? I wanna see the moon :(",
-        "I miss the moon..",
-        f"it's only {abs(18-current_hour)} hours left before the moon rises, I'm excited, are you guys?"
-    ]
-
-    all_channels = list(bot.get_all_channels())
-    text_channels = [ch for ch in all_channels if isinstance(ch, discord.TextChannel)]
-    
-    if is_busy:
-        if text_channels:
-            channel = random.choice(text_channels)
-            try:
-                await channel.send(random.choice(quotes))
-            except Exception as err:
-                print(f"Failed to send message to {channel.name}: {err}")
-
+    if text_channels:
+        channel = random.choice(text_channels)
+        try:
+            await channel.send(random.choice(quotes))
+        except Exception as err:
+            print(f"Failed to send message to {channel.name}: {err}")
 
 @bot.tree.command(name="spacefact", description="Get an interesting fact about space/moon!")
 async def spacefact(interaction: discord.Interaction):
-    time_info = check_time()
-    
-    await interaction.response.send_message(f"Let me search through my garden of wisdom..")  # Shows "Luna is thinking..."
+    await interaction.response.send_message(f"Let me search through my cosmic knowledge vault! 🌙✨")  # Shows "Luna is thinking..."
     
     try:
-        response = await get_space_fact_response(interaction.user.display_name, time_info)
-        await interaction.edit_original_response(content = response)
+        response = await get_space_fact_response(interaction.user.display_name)
+        await interaction.edit_original_response(content=response)
     except Exception as e:
         print(f"Error in spacefact command: {e}")
         await interaction.followup.send("Oops! Something went wrong while fetching space facts. Try again later! 🌙")
@@ -381,17 +347,15 @@ class ZodiacSelect(discord.ui.Select):
     
     async def callback(self, interaction: discord.Interaction):
         selected_zodiac = self.values[0]
-        time_info = check_time()
         
         # Respond immediately to avoid timeout
-        await interaction.response.send_message(f"🔮 Consulting the stars for {selected_zodiac.capitalize()}... 🌙", ephemeral=True)
+        await interaction.response.send_message(f"🔮 Consulting the cosmic energies for {selected_zodiac.capitalize()}... 🌙✨", ephemeral=True)
         
         try:
             response = await generate_ai_response(
                 f"Acting as Luna, provide a short horoscope for {selected_zodiac}. Keep it mystical and moon-related, under 40 words.", 
                 interaction.user.display_name, 
-                "horoscope", 
-                time_info
+                "horoscope"
             )
             
             # Check if AI response is None or empty
@@ -400,10 +364,10 @@ class ZodiacSelect(discord.ui.Select):
             else:
                 # Fallback horoscope responses when AI fails
                 fallback_horoscopes = {
-                    "aries": "🔥 The moon's fire ignites your passion today. Bold moves await under the celestial glow! ♈",
-                    "taurus": "🌱 Luna's gentle light nurtures your stability. Ground yourself in moonbeams and prosper! ♉", 
-                    "gemini": "💫 The twin stars dance with Luna tonight. Communication flows like moonlight on water! ♊",
-                    "cancer": "🌙 Your lunar ruler shines brightest! Emotions run deep as the cosmic tides today. ♋",
+                    "aries": "🔥 The moon's fire ignites your passion today! Bold moves await under the celestial glow! ♈✨",
+                    "taurus": "🌱 Luna's gentle light nurtures your stability! Ground yourself in moonbeams and prosper! ♉🌙", 
+                    "gemini": "💫 The twin stars dance with Luna tonight! Communication flows like moonlight on water! ♊✨",
+                    "cancer": "🌙 Your lunar ruler shines brightest! Emotions run deep as the cosmic tides today! ♋💫",
                     "leo": "👑 The moon crowns your natural radiance. Shine bright, lunar royalty calls to you! ♌",
                     "virgo": "🌾 Luna's precision guides your path today. Perfect details emerge under her watchful gaze! ♍",
                     "libra": "⚖️ The moon balances your scales today. Harmony flows through Luna's gentle influence! ♎",
