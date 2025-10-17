@@ -71,13 +71,13 @@ async def generate_ai_response(user_message, user_name, conversation_type, mood_
     global last_ai_request_time, ai_request_count
     
     try:
-        # Rate limiting: 1000 requests per minute
+        # Rate limiting: 10 requests per minute
         current_time = dt.datetime.now().timestamp()
         if current_time - last_ai_request_time > 60:  # Reset count every minute
             ai_request_count = 0
             last_ai_request_time = current_time
         
-        if ai_request_count >= 1000:
+        if ai_request_count >= 10:
             return None  # Rate limited, use fallback
         
         # Luna's consistent personality with mood variations
