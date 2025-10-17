@@ -103,12 +103,12 @@ def check_emotional_keywords(content):
     return False
 
 def check_time():
-    now = dt.datetime.now()
+    now = dt.datetime.now().time()
     global current_hour
     global is_night_time
     global is_busy
-    current_hour = now.hour
-    is_night_time = current_hour < 18 or current_hour >= 6
+    current_hour = now
+    is_night_time = current_hour >= dt.time(6,0,0) or current_hour <= dt.time(18,0,0)
     is_busy = not is_night_time
     return [is_busy, is_night_time]
 
@@ -299,9 +299,9 @@ async def on_message(message):
 async def spontaneous_message_during_night():
     await bot.wait_until_ready()
 
-    now = dt.datetime.now()
-    current_hour = now.hour
-    is_night_time = current_hour < 18 or current_hour >= 6
+    now = dt.datetime.now().time()
+    current_hour = now
+    is_night_time = current_hour <= dt.time(18,0,0) or current_hour >= dt.time(6,0,0)
 
     quotes = [
         "Ugh, boring.. where's everybody?",
@@ -324,9 +324,9 @@ async def spontaneous_message_during_night():
 async def spontaneous_message_during_busy():
     await bot.wait_until_ready()
 
-    now = dt.datetime.now()
-    current_hour = now.hour
-    is_night_time = current_hour < 18 or current_hour >= 6
+    now = dt.datetime.now().time()
+    current_hour = now
+    is_night_time = current_hour < dt.time(18,0,0) or current_hour >= dt.time(6,0,0)
     is_busy = not is_night_time
 
     quotes = [
