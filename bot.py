@@ -3,7 +3,6 @@ import random
 from discord.ext import tasks, commands
 import datetime as dt
 import re
-import google.generativeai as genai
 import asyncio
 import os
 from dotenv import load_dotenv
@@ -19,9 +18,7 @@ intents.members = True
 
 bot = commands.Bot(command_prefix=os.getenv('BOT_PREFIX', '!'), intents=intents)
 
-genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
-
-# Initialize Ollama client and usage manager
+# Initialize Ollama client and usage manager (NO MORE GEMINI!)
 OLLAMA_URL = os.getenv('OLLAMA_URL', 'https://expert-winner-vj49qx574jjhw49r-11434.app.github.dev/')
 ollama_client = OllamaClient(OLLAMA_URL)
 usage_manager = UsageManager()
@@ -57,9 +54,7 @@ advice_requests = [
     "thoughts on", "what's your opinion", "what would you do", "help me choose"
 ]
 
-# Rate limiting tracker for Gemini API
-last_ai_request_time = 0
-ai_request_count = 0
+# No more Gemini rate limiting needed! Ollama is unlimited! 🌙✨
 
 def check_disrespectful_behavior(content):
     disrespectful_patterns = [
@@ -75,63 +70,45 @@ def check_disrespectful_behavior(content):
     return False
 
 async def generate_ai_response(user_message, user_name, conversation_type, mood_type="cheerful"):
-    global last_ai_request_time, ai_request_count
-    
+    """
+    Generate AI response using ONLY Ollama (no more Gemini!)
+    Pure unlimited moon spirit energy! 🌙
+    """
     # Luna's consistent personality with mood variations
     if mood_type == "sassy":
         personality = "You are Luna, a sassy but wise moon spirit. When dealing with disrespect, you're playful and sarcastic but still mystical and sophisticated. Always speak AS Luna, not about Luna."
     else:
         personality = "You are Luna, a cheerful moon spirit always energized by the moon's presence worldwide. You're wise, sophisticated, mystical but playful. Always speak AS Luna, not about Luna."
         
-    # Enhanced prompt that should work better with Phi-3
+    # Enhanced prompt optimized for Phi-3
     luna_prompt = f"""{personality}
 
 Someone named {user_name} said: "{user_message}"
 
 Respond as Luna in under 30 words. Use moon emojis 🌙 and be magical! Don't mention being an AI or Phi. You ARE Luna the moon spirit."""
 
-    # 🚀 TRY OLLAMA FIRST (with smart usage limits!)
+    # 🚀 OLLAMA ONLY - With smart usage limits!
     can_use_ollama, reason = usage_manager.can_use_codespace()
     
     if can_use_ollama:
         try:
-            start_time = dt.datetime.now()
             ollama_response = await ollama_client.generate_response(luna_prompt)
-            end_time = dt.datetime.now()
             
             if ollama_response:
                 # Log usage (estimate ~0.01 hours per request)
-                usage_hours = 0.01
-                usage_manager.log_usage(usage_hours)
+                usage_manager.log_usage(0.01)
                 print("✅ Using Ollama response (within daily limits)")
                 return ollama_response
+            else:
+                print("❌ Ollama returned empty response")
+                return None
+                
         except Exception as e:
-            print(f"❌ Ollama failed: {e}")
+            print(f"❌ Ollama error: {e}")
+            return None
     else:
-        print(f"⏰ Ollama unavailable: {reason}")
-    
-    # 🔄 FALLBACK TO GEMINI (rate limited)
-    try:
-        current_time = dt.datetime.now().timestamp()
-        if current_time - last_ai_request_time > 60:  # Reset count every minute
-            ai_request_count = 0
-            last_ai_request_time = current_time
-        
-        if ai_request_count >= 10:
-            print("❌ Gemini rate limited")
-            return None  # Rate limited, use fallback
-        
-        model = genai.GenerativeModel("gemini-2.5-flash")
-        response = await asyncio.wait_for(
-            asyncio.to_thread(model.generate_content, luna_prompt),
-            timeout=10.0
-        )
-        ai_request_count += 1
-        print("✅ Using Gemini fallback")
-        return response.text.strip()
-        
-    except Exception as err:
-        print(f"❌ Both AI services failed: {err}")
+        print(f"⏰ Daily usage limit reached: {reason}")
+        print(f"💡 Luna will use text fallbacks until tomorrow!")
         return None            
         
 
