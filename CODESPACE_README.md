@@ -1,19 +1,104 @@
-# 🌙 Luna's Ollama Codespace Setup
+# 🚀 GitHub Codespace Setup for Luna
 
-This Codespace is configured to run Ollama with Luna's Discord bot for unlimited AI responses!
+This guide helps you set up Luna with **unlimited AI responses** using Ollama on GitHub Codespaces (free with Student Pack!).
 
-## 🚀 Quick Start
+## 🎯 Why Codespaces?
 
-1. **Launch Codespace**: Click "Code" → "Codespaces" → "Create codespace on main"
-2. **Wait for setup**: The setup script will automatically install Ollama and download models
-3. **Test the setup**: Run `python test_ollama.py`
-4. **Start manager**: Run `python ollama_manager.py` and open port 8000
+- **✅ Free**: 180 hours/month with GitHub Student Pack
+- **✅ Unlimited AI**: No API rate limits with local Ollama
+- **✅ Auto-setup**: Everything installs automatically
+- **✅ Always online**: Runs independently from your PC
 
-## 🌐 Access Points
+## 🛠️ Setup Steps
 
-- **Ollama API**: `http://localhost:11434`
-- **Management Web UI**: `http://localhost:8000`
-- **Model Downloads**: Use the web UI or command line
+### 1. Create the Codespace
+
+1. Go to your GitHub repository
+2. Click the **Code** button (green)
+3. Go to **Codespaces** tab
+4. Click **Create codespace on master**
+5. Wait ~5 minutes for automatic setup
+
+### 2. Verify Installation
+
+The devcontainer automatically:
+- ✅ Installs Ollama
+- ✅ Downloads Phi-3 Mini model (~2.3GB)
+- ✅ Starts Ollama service
+- ✅ Installs Python dependencies
+
+Check it worked:
+```bash
+python test_integration.py
+```
+
+You should see:
+```
+✅ Ollama connection successful!
+🎭 Luna says: [mystical response]
+✅ Luna sounds mystical!
+```
+
+### 3. Configure Environment
+
+Create your `.env` file in Codespace:
+```bash
+nano .env
+```
+
+Add your Discord token and Codespace URL:
+```env
+DISCORD_TOKEN=your_discord_bot_token_here
+OLLAMA_URL=https://your-codespace-url.github.dev/proxy/11434
+BOT_PREFIX=!
+```
+
+**To get your Codespace URL:**
+1. Go to **Ports** tab in Codespace
+2. Find port **11434** (Ollama API)
+3. Right-click → **Port Visibility** → **Public**
+4. Copy the forwarded address
+
+### 4. Run Luna
+
+```bash
+python bot.py
+```
+
+Luna is now live with unlimited responses! 🌙✨
+
+## 🕒 Smart Usage Management
+
+Luna includes a 6-hour daily limit system to maximize your 180h/month:
+
+- **Daily Limit**: 6 hours/day
+- **Hour Banking**: Unused hours roll over
+- **Max Banked**: Up to 60 hours
+- **Monitoring**: Use `/usage` command in Discord
+
+### Check Usage Status
+```bash
+python usage_admin.py --status
+```
+
+### Manually Bank Hours
+```bash
+python usage_admin.py --bank 2.5
+```
+
+## 🌐 Web Management Interface
+
+Start the Ollama web UI:
+```bash
+python ollama_manager.py
+```
+
+Access at: `http://localhost:8000`
+
+Features:
+- ✅ Test model responses
+- ✅ View model info
+- ✅ Check service status
 
 ## 🤖 Available Models
 
@@ -26,50 +111,48 @@ ollama pull codellama:7b     # Code specialist
 ollama pull mistral:7b       # Fast and capable
 ```
 
-## 🔧 Management Commands
+## 🔧 Troubleshooting
 
+**Ollama not responding?**
 ```bash
-# Check Ollama status
-ollama list
-
-# Test a model
-ollama run phi3:mini "Hello from Luna!"
-
-# View logs
-tail -f ollama.log
+# Check if Ollama is running
+ps aux | grep ollama
 
 # Restart Ollama
-pkill ollama && ollama serve &
+pkill ollama
+ollama serve &
 ```
 
-## 🌙 Integration with Luna
+**Port not accessible?**
+- Make sure port 11434 is set to **Public** in Ports tab
+- Check firewall settings
 
-To use this Ollama instance with your Discord bot:
-
-1. Get the Codespace URL (changes each time)
-2. Update Luna's code to use: `https://your-codespace-url.github.dev:11434`
-3. Add fallback to Gemini API for when Codespace is sleeping
+**Model not found?**
+```bash
+# Download Phi-3 Mini
+ollama pull phi3:mini
+```
 
 ## 💡 Tips
 
-- **Keep active**: Codespaces sleep after 30 min of inactivity
-- **Bookmark URL**: The Codespace URL changes, so save it when active
-- **Monitor usage**: Student pack gives 180 hours/month
-- **Use ngrok**: For permanent URL (optional)
+- **Keep Codespace alive**: Activity keeps it running
+- **Stop when not needed**: Saves hours for busier days
+- **Monitor usage**: Check `/usage` in Discord regularly
+- **Update code**: Run `git pull origin master` for updates
 
-## 🔄 Auto-restart Script
+## 📊 Expected Performance
 
-Create `keep_alive.sh` for auto-restart:
+- **Response Time**: 2-5 seconds
+- **Concurrency**: Handles multiple users
+- **Uptime**: As long as Codespace is running
+- **Cost**: $0 with Student Pack
 
-```bash
-#!/bin/bash
-while true; do
-    if ! pgrep -x "ollama" > /dev/null; then
-        echo "Restarting Ollama..."
-        ollama serve &
-    fi
-    sleep 60
-done
-```
+## 🎉 You're Done!
 
-Run with: `nohup bash keep_alive.sh &`
+Luna now has:
+- ✅ Unlimited AI responses
+- ✅ Smart hour management
+- ✅ Free hosting on Codespaces
+- ✅ No API rate limits
+
+Enjoy your mystical moon spirit bot! 🌙✨
