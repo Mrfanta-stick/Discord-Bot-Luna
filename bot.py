@@ -7,6 +7,8 @@ import google.generativeai as genai
 import asyncio
 import os
 from dotenv import load_dotenv
+from ollama_client import OllamaClient
+from usage_manager import UsageManager
 
 # Load environment variables
 load_dotenv()
@@ -18,6 +20,11 @@ intents.members = True
 bot = commands.Bot(command_prefix=os.getenv('BOT_PREFIX', '!'), intents=intents)
 
 genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
+
+# Initialize Ollama client and usage manager
+OLLAMA_URL = os.getenv('OLLAMA_URL', 'https://expert-winner-vj49qx574jjhw49r-11434.app.github.dev/')
+ollama_client = OllamaClient(OLLAMA_URL)
+usage_manager = UsageManager()
 
 #defined responses
 greetings = [
@@ -70,37 +77,61 @@ def check_disrespectful_behavior(content):
 async def generate_ai_response(user_message, user_name, conversation_type, mood_type="cheerful"):
     global last_ai_request_time, ai_request_count
     
+    # Luna's consistent personality with mood variations
+    if mood_type == "sassy":
+        personality = "You are Luna, a sassy but wise moon spirit. When dealing with disrespect, you're playful and sarcastic but still mystical and sophisticated. Always speak AS Luna, not about Luna."
+    else:
+        personality = "You are Luna, a cheerful moon spirit always energized by the moon's presence worldwide. You're wise, sophisticated, mystical but playful. Always speak AS Luna, not about Luna."
+        
+    # Enhanced prompt that should work better with Phi-3
+    luna_prompt = f"""{personality}
+
+Someone named {user_name} said: "{user_message}"
+
+Respond as Luna in under 30 words. Use moon emojis 🌙 and be magical! Don't mention being an AI or Phi. You ARE Luna the moon spirit."""
+
+    # 🚀 TRY OLLAMA FIRST (with smart usage limits!)
+    can_use_ollama, reason = usage_manager.can_use_codespace()
+    
+    if can_use_ollama:
+        try:
+            start_time = dt.datetime.now()
+            ollama_response = await ollama_client.generate_response(luna_prompt)
+            end_time = dt.datetime.now()
+            
+            if ollama_response:
+                # Log usage (estimate ~0.01 hours per request)
+                usage_hours = 0.01
+                usage_manager.log_usage(usage_hours)
+                print("✅ Using Ollama response (within daily limits)")
+                return ollama_response
+        except Exception as e:
+            print(f"❌ Ollama failed: {e}")
+    else:
+        print(f"⏰ Ollama unavailable: {reason}")
+    
+    # 🔄 FALLBACK TO GEMINI (rate limited)
     try:
-        # Rate limiting: 10 requests per minute
         current_time = dt.datetime.now().timestamp()
         if current_time - last_ai_request_time > 60:  # Reset count every minute
             ai_request_count = 0
             last_ai_request_time = current_time
         
         if ai_request_count >= 10:
+            print("❌ Gemini rate limited")
             return None  # Rate limited, use fallback
         
-        # Luna's consistent personality with mood variations
-        if mood_type == "sassy":
-            personality = "moon spirit, sassy and playful when dealing with disrespect, but still wise mystical and sophisticated"
-        else:
-            personality = "cheerful moon spirit, always energized by moon's presence worldwide, wise, sophisticated and mystical but playful"
-            
-        prompt = f"Luna ({personality}): {user_name} said '{user_message}'. Reply briefly (under 30 words) as Luna:"
-        
         model = genai.GenerativeModel("gemini-2.5-flash")
-        try:
-            response = await asyncio.wait_for(
-                asyncio.to_thread(model.generate_content, prompt),
-                timeout=10.0
-            )
-            ai_request_count += 1
-            return response.text.strip()
-        except asyncio.TimeoutError:
-            print(f"Timeout error")
+        response = await asyncio.wait_for(
+            asyncio.to_thread(model.generate_content, luna_prompt),
+            timeout=10.0
+        )
+        ai_request_count += 1
+        print("✅ Using Gemini fallback")
+        return response.text.strip()
         
     except Exception as err:
-        print(f"AI error: {err}")
+        print(f"❌ Both AI services failed: {err}")
         return None            
         
 
@@ -400,6 +431,50 @@ async def horoscope(interaction: discord.Interaction):
     view = ZodiacView()
     await interaction.response.send_message("🌙 Choose your zodiac sign:", view=view, ephemeral=True)
 
+@bot.tree.command(name="usage", description="Check Luna's Codespace usage status")
+async def usage_status(interaction: discord.Interaction):
+    """Show current Codespace usage and limits"""
+    status = usage_manager.get_status_report()
+    
+    embed = discord.Embed(
+        title="🕒 Luna's Codespace Usage Status",
+        color=0x7B68EE,
+        timestamp=dt.datetime.now()
+    )
+    
+    # Status indicator
+    status_emoji = "✅" if status['can_use'] else "❌"
+    embed.add_field(
+        name=f"{status_emoji} Current Status", 
+        value=status['reason'], 
+        inline=False
+    )
+    
+    # Today's usage
+    embed.add_field(
+        name="📊 Today's Usage", 
+        value=f"{status['used_today']:.1f}h / {status['available_today']:.1f}h available", 
+        inline=True
+    )
+    
+    # Banked hours
+    embed.add_field(
+        name="🏦 Banked Hours", 
+        value=f"{status['banked_hours']:.1f}h saved", 
+        inline=True
+    )
+    
+    # Monthly progress
+    monthly_percent = (status['monthly_used'] / status['monthly_limit']) * 100
+    embed.add_field(
+        name="📅 Monthly Usage", 
+        value=f"{status['monthly_used']:.1f}h / {status['monthly_limit']}h ({monthly_percent:.1f}%)", 
+        inline=False
+    )
+    
+    embed.set_footer(text="💡 Unused hours are automatically banked for busier days!")
+    
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 bot.run(os.getenv('DISCORD_TOKEN'))
