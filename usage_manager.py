@@ -12,7 +12,7 @@ from pathlib import Path
 class UsageManager:
     def __init__(self, config_file="usage_data.json"):
         self.config_file = config_file
-        self.daily_limit_hours = 6
+        self.daily_limit_hours = 6  # 6 hours of AI responses per day
         self.monthly_limit_hours = 180  # GitHub Student Pack limit
         self.load_usage_data()
     
