@@ -27,6 +27,7 @@
   },
   
   "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "bash start_all.sh",
   
   "features": {
     "ghcr.io/devcontainers/features/python:1": {

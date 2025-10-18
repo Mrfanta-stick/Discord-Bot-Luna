@@ -30,7 +30,7 @@ class OllamaClient:
                 }
             }
             
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30)) as session:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60)) as session:
                 async with session.post(self.api_url, json=payload) as response:
                     if response.status == 200:
                         data = await response.json()
