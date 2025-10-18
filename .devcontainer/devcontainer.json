@@ -1,0 +1,39 @@
+{
+  "name": "Luna Ollama Server",
+  "image": "ubuntu:22.04",
+  
+  "customizations": {
+    "codespaces": {
+      "machine": "premiumLinux"
+    },
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.pylint"
+      ]
+    }
+  },
+  
+  "forwardPorts": [11434, 8000],
+  "portsAttributes": {
+    "11434": {
+      "label": "Ollama API",
+      "onAutoForward": "notify"
+    },
+    "8000": {
+      "label": "Test Server",
+      "onAutoForward": "ignore"
+    }
+  },
+  
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "18"
+    }
+  }
+}
