@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 🧪 Luna Smart Usage Integration Test
-Tests the hybrid Ollama + Gemini system with usage management
+Tests the pure Ollama system with usage management
 """
 
 import asyncio
@@ -67,7 +67,7 @@ Respond as Luna in under 30 words. Use moon emojis 🌙 and be magical! Don't me
             print("   2. Port 11434 is set to 'Public'")
             print("   3. OLLAMA_URL in .env is correct")
     else:
-        print("🔄 Would fallback to Gemini API (rate limited backup)")
+        print("🔄 Would use text fallbacks when usage limit reached")
         print("💡 The smart system automatically saves hours for when you need them most!")
 
 if __name__ == "__main__":
