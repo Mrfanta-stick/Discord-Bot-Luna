@@ -85,7 +85,9 @@ async def generate_ai_response(user_message, user_name, conversation_type, mood_
 
 Someone named {user_name} said: "{user_message}"
 
-Respond as Luna in under 30 words. Use moon emojis 🌙 and be magical! Don't mention being an AI or Phi. You ARE Luna the moon spirit."""
+Respond as Luna in under 30 words. Use moon emojis 🌙 and be magical! Don't mention being an AI or Phi. You ARE Luna the moon spirit.
+
+IMPORTANT: Do NOT include @ mentions or tags in your response. Just respond naturally."""
 
     # 🚀 OLLAMA ONLY - With smart usage limits!
     can_use_ollama, reason = usage_manager.can_use_codespace()
