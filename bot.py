@@ -19,7 +19,7 @@ intents.members = True
 bot = commands.Bot(command_prefix=os.getenv('BOT_PREFIX', '!'), intents=intents)
 
 # Initialize Ollama client and usage manager (NO MORE GEMINI!)
-OLLAMA_URL = os.getenv('OLLAMA_URL', 'https://expert-winner-vj49qx574jjhw49r-11434.app.github.dev/')
+OLLAMA_URL = os.getenv('OLLAMA_URL', 'http://localhost:11434')
 ollama_client = OllamaClient(OLLAMA_URL)
 usage_manager = UsageManager()
 
