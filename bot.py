@@ -23,6 +23,14 @@ OLLAMA_URL = os.getenv('OLLAMA_URL', 'https://expert-winner-vj49qx574jjhw49r-114
 ollama_client = OllamaClient(OLLAMA_URL)
 usage_manager = UsageManager()
 
+# --- Start: Prevent double-replies by caching recently-processed message IDs ---
+processed_message_ids = set()
+
+async def _cleanup_processed_message(message_id: int, delay: int = 30):
+    await asyncio.sleep(delay)
+    processed_message_ids.discard(message_id)
+# --- End ---
+
 #defined responses
 greetings = [
     "hi", "hello", "hey", "yo", "sup", "hey there", "greetings",
@@ -164,6 +172,14 @@ async def sync(ctx: commands.context):
 async def on_message(message):
     if message.author == bot.user:
         return
+
+    # Guard: skip if we've already handled this message recently
+    if message.id in processed_message_ids:
+        print(f"Skipping already-processed message {message.id}")
+        return
+    processed_message_ids.add(message.id)
+    # schedule removal of the id after a short TTL so memory doesn't grow
+    asyncio.create_task(_cleanup_processed_message(message.id, delay=30))
 
     content = message.content.lower()
 
