@@ -19,7 +19,7 @@ bot = commands.Bot(command_prefix=os.getenv('BOT_PREFIX', '!'), intents=intents)
 
 genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 
-# Rate limiting for Gemini 2.0 Flash Lite: 15 RPM, 1000 RPD
+# Rate limiting for Gemini 2.5 Flash Lite: 15 RPM, 1000 RPD
 last_ai_request_time = 0
 ai_request_count = 0
 
@@ -101,18 +101,18 @@ async def generate_ai_response(user_message, user_name, conversation_type, mood_
 
 Someone named {user_name} said: "{user_message}"
 
-Respond as Luna in under 30 words. Use moon emojis 🌙 and be magical! Don't mention being an AI. You ARE Luna the moon spirit.
+Respond as Luna in under 50 words. Use moon emojis 🌙 and be magical! Don't mention being an AI. You ARE Luna the moon spirit.
 
 IMPORTANT: Do NOT include @ mentions or tags in your response. Just respond naturally."""
         
-        # Use Gemini 2.0 Flash Lite model
+        # Use Gemini 2.5 Flash Lite model
         model = genai.GenerativeModel("gemini-2.5-flash-lite")
         response = await asyncio.wait_for(
             asyncio.to_thread(model.generate_content, prompt),
             timeout=10.0
         )
         ai_request_count += 1
-        print(f"✅ Gemini 2.0 Flash Lite response ({ai_request_count}/15 this minute)")
+        print(f"✅ Gemini 2.5 Flash Lite response ({ai_request_count}/15 this minute)")
         return response.text.strip()
         
     except asyncio.TimeoutError:
