@@ -25,11 +25,11 @@ ai_request_count = 0
 
 # --- Start: Prevent double-replies by caching recently-processed message IDs ---
 processed_message_ids = set()
+philosophical_message_ids = set()  # Permanent storage for philosophical questions
 
 async def _cleanup_processed_message(message_id: int, delay: int = 30):
     await asyncio.sleep(delay)
     processed_message_ids.discard(message_id)
-# --- End ---
 
 #defined responses
 greetings = [
@@ -99,11 +99,12 @@ async def generate_ai_response(user_message, user_name, conversation_type, mood_
             
         prompt = f"""{personality}
 
-Someone named {user_name} said: "{user_message}"
+                    Someone named {user_name} said: "{user_message}"
 
-Respond as Luna in under 50 words. Use moon emojis 🌙 and be magical! Don't mention being an AI. You ARE Luna the moon spirit.
+                    Respond as Luna in under 50 words. Use moon emojis 🌙 and be magical! Don't mention being an AI. You ARE Luna the moon spirit.
 
-IMPORTANT: Do NOT include @ mentions or tags in your response. Just respond naturally."""
+                    IMPORTANT: Do NOT include @ mentions or tags in your response. Just respond naturally.
+                """
         
         # Use Gemini 2.5 Flash Lite model
         model = genai.GenerativeModel("gemini-2.5-flash-lite")
@@ -157,16 +158,63 @@ async def get_space_fact_response(user_name):
         return random.choice(fallback_responses)
 
 
+
+async def generate_philosophical_question():
+    """Generate a philosophical question without needing user context"""
+    try:
+        personality = "You are Luna, a wise moon spirit. Ask ONE profound, thought-provoking philosophical question about life, existence, time, consciousness, or the universe. Keep it mystical and poetic. Use moon emoji 🌙. Under 40 words."
+        
+        model = genai.GenerativeModel("gemini-2.5-flash-lite")
+        response = await asyncio.wait_for(
+            asyncio.to_thread(model.generate_content, personality),
+            timeout=10.0
+        )
+        return response.text.strip()
+    except Exception as err:
+        print(f"❌ Error generating philosophical question: {err}")
+        # Fallback questions
+        fallback_questions = [
+            "🌙 If the universe is infinite, does that mean every possibility exists somewhere? What version of you exists in another realm?",
+            "✨ Time flows forward for us, but does it flow at all for the moon? What does eternity feel like?",
+            "🌙 If consciousness is just stardust pondering itself, are we the universe experiencing itself?",
+            "💫 They say home is where the heart is... but what if your heart belongs to the stars? Where is home then?",
+            "🌙 The moon reflects light but creates no light of its own. Can wisdom exist the same way - borrowed, reflected, yet still illuminating?",
+            "✨ Every atom in your body was once inside a star. Are you the past, present, or future?",
+            "🌙 If a tree falls in a forest and no one hears it, does it make a sound? But more importantly... does the forest remember?"
+        ]
+        return random.choice(fallback_questions)
+
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user}!")
-    if random.random() < 0.01:
-        spontaneous_message.start()
+    print("🌙 Luna is ready to share wisdom!")
+    philosophical_musings.start()
 
 @bot.hybrid_command()
 async def sync(ctx: commands.context):
     await ctx.send("syncing...")
     await bot.tree.sync()
+
+@tasks.loop(minutes=1)
+async def philosophical_musings():
+    try:
+        # 40% chance to actually send a message
+        if random.random() < 0.4:
+            question = await generate_philosophical_question()
+            
+            # Send to specific channel
+            channel = bot.get_channel(1399449186612543488)
+            
+            if channel:
+                msg = await channel.send(question)
+                processed_message_ids.add(msg.id)
+                philosophical_message_ids.add(msg.id)
+                print(f"🌙 Sent philosophical question to {channel.name}")
+            else:
+                print(f"❌ Channel not found!")
+    except Exception as e:
+        print(f"❌ Error in philosophical_musings: {e}")
+
 
 
 @bot.event
@@ -181,6 +229,13 @@ async def on_message(message):
     processed_message_ids.add(message.id)
     # schedule removal of the id after a short TTL so memory doesn't grow
     asyncio.create_task(_cleanup_processed_message(message.id, delay=30))
+
+    # IGNORE replies to Luna's philosophical messages
+    if message.reference and message.reference.message_id:
+        referenced_msg_id = message.reference.message_id
+        if referenced_msg_id in philosophical_message_ids:
+            print(f"⏭️ Ignoring reply to philosophical question {referenced_msg_id}")
+            return
 
     content = message.content.lower()
 
