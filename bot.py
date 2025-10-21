@@ -195,7 +195,7 @@ async def sync(ctx: commands.context):
     await ctx.send("syncing...")
     await bot.tree.sync()
 
-@tasks.loop(minutes=1)
+@tasks.loop(hours=5)
 async def philosophical_musings():
     try:
         # 40% chance to actually send a message
