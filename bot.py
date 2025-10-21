@@ -203,7 +203,7 @@ async def philosophical_musings():
             question = await generate_philosophical_question()
             
             # Send to specific channel
-            channel = bot.get_channel(1399449186612543488)
+            channel = bot.get_channel(1428083543644573840)
             
             if channel:
                 msg = await channel.send(question)
