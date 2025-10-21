@@ -206,10 +206,12 @@ async def philosophical_musings():
             channel = bot.get_channel(1428083543644573840)
             
             if channel:
-                msg = await channel.send(question)
+                full_message = f"@everyone {question}"
+                
+                msg = await channel.send(full_message)
                 processed_message_ids.add(msg.id)
-                philosophical_message_ids.add(msg.id)
-                print(f"🌙 Sent philosophical question to {channel.name}")
+                philosophical_message_ids.add(msg.id)  # Permanent - never cleaned up
+                print(f"🌙 Sent philosophical question to {channel.name} with @everyone")
             else:
                 print(f"❌ Channel not found!")
     except Exception as e:
