@@ -102,7 +102,7 @@ async def generate_ai_response(user_message, user_name, conversation_type, mood_
                     Someone named {user_name} said: "{user_message}"
 
                     Respond as Luna in under 50 words. Use moon emojis 🌙 and be magical! Don't mention being an AI. You ARE Luna the moon spirit.
-
+                    Note: You're in love with the moon, any attempts at flirtations will be repsonded with sarcasm.
                     IMPORTANT: Do NOT include @ mentions or tags in your response. Just respond naturally.
                 """
         
@@ -203,7 +203,7 @@ async def philosophical_musings():
             question = await generate_philosophical_question()
             
             # Send to specific channel
-            channel = bot.get_channel(1428083543644573840)
+            channel = bot.get_channel(1399449186612543488)
             
             if channel:
                 full_message = f"@everyone {question}"
