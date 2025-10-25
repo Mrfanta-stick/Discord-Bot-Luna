@@ -198,8 +198,8 @@ async def sync(ctx: commands.context):
 @tasks.loop(mins = 1)
 async def philosophical_musings():
     try:
-        # 40% chance to actually send a message
-        if random.random() < 0.4:
+        # 100% chance to actually send a message
+        if random.random() < 1.0:
             question = await generate_philosophical_question()
             
             # Send to specific channel
