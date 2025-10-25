@@ -195,7 +195,7 @@ async def sync(ctx: commands.context):
     await ctx.send("syncing...")
     await bot.tree.sync()
 
-@tasks.loop(hours=5)
+@tasks.loop(mins = 1)
 async def philosophical_musings():
     try:
         # 40% chance to actually send a message
@@ -206,12 +206,12 @@ async def philosophical_musings():
             channel = bot.get_channel(1399449186612543488)
             
             if channel:
-                full_message = f"@everyone {question}"
+                full_message = f"@✧ Stir the Veilʳᵉᵛⁱᵛᵉ {question}"
                 
                 msg = await channel.send(full_message)
                 processed_message_ids.add(msg.id)
                 philosophical_message_ids.add(msg.id)  # Permanent - never cleaned up
-                print(f"🌙 Sent philosophical question to {channel.name} with @everyone")
+                print(f"🌙 Sent philosophical question to {channel.name} with @✧ Stir the Veilʳᵉᵛⁱᵛᵉ")
             else:
                 print(f"❌ Channel not found!")
     except Exception as e:
