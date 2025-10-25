@@ -195,11 +195,11 @@ async def sync(ctx: commands.context):
     await ctx.send("syncing...")
     await bot.tree.sync()
 
-@tasks.loop(minutes=1)
+@tasks.loop(hours=5)
 async def philosophical_musings():
     try:
-        # 100% chance to actually send a message
-        if random.random() < 1.0:
+        # 50% chance to actually send a message
+        if random.random() < 0.5:
             question = await generate_philosophical_question()
             
             # Send to specific channel
@@ -210,11 +210,7 @@ async def philosophical_musings():
                 guild = channel.guild
                 stir_role = discord.utils.get(guild.roles, name="✧ Stir the Veilʳᵉᵛⁱᵛᵉ")
                 
-                if stir_role:
-                    full_message = f"{stir_role.mention}\n\n{question}"
-                else:
-                    # Fallback to @everyone if role not found
-                    full_message = f"@everyone\n\n{question}"
+                full_message = f"{stir_role.mention}\n\n{question}"
                 
                 msg = await channel.send(full_message)
                 processed_message_ids.add(msg.id)
