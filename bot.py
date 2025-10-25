@@ -206,12 +206,20 @@ async def philosophical_musings():
             channel = bot.get_channel(1399449186612543488)
             
             if channel:
-                full_message = f"@✧ Stir the Veilʳᵉᵛⁱᵛᵉ {question}"
+                # Get the "Stir the Veil" role by name
+                guild = channel.guild
+                stir_role = discord.utils.get(guild.roles, name="✧ Stir the Veilʳᵉᵛⁱᵛᵉ")
+                
+                if stir_role:
+                    full_message = f"{stir_role.mention}\n\n{question}"
+                else:
+                    # Fallback to @everyone if role not found
+                    full_message = f"@everyone\n\n{question}"
                 
                 msg = await channel.send(full_message)
                 processed_message_ids.add(msg.id)
                 philosophical_message_ids.add(msg.id)  # Permanent - never cleaned up
-                print(f"🌙 Sent philosophical question to {channel.name} with @✧ Stir the Veilʳᵉᵛⁱᵛᵉ")
+                print(f"🌙 Sent philosophical question to {channel.name}")
             else:
                 print(f"❌ Channel not found!")
     except Exception as e:
