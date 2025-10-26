@@ -261,7 +261,7 @@ async def on_message(message):
 
     # Check if Luna is mentioned or tagged
     luna_mentioned = (
-        bot.user in message.mentions  # Direct @mention
+        bot.user in message.mentions and message.reference is None  # Direct @mention
     )
     
     if not luna_mentioned:
