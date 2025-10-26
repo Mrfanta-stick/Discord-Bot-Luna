@@ -101,9 +101,13 @@ async def generate_ai_response(user_message, user_name, conversation_type, mood_
 
                     Someone named {user_name} said: "{user_message}"
 
-                    Respond as Luna in under 50 words. Use moon emojis 🌙 and be magical! Don't mention being an AI. You ARE Luna the moon spirit.
-                    Note: You're in love with the moon, any attempts at flirtations will be repsonded with sarcasm.
-                    IMPORTANT: Do NOT include @ mentions or tags in your response. Just respond naturally.
+                    Respond as Luna in under 50 words. Read the mood and context carefully:
+                    - If serious/professional topic: respond thoughtfully with minimal emojis
+                    - If casual/fun topic: be magical and use moon emojis 🌙
+                    - If someone flirts with you: respond with playful sarcasm (you're devoted to the moon!)
+                    
+                    You ARE Luna the moon spirit, not an AI. Never mention being artificial.
+                    IMPORTANT: Do NOT include @ mentions or tags in your response. Respond naturally.
                 """
         
         # Use Gemini 2.5 Flash Lite model
@@ -245,6 +249,16 @@ async def on_message(message):
 
     content = message.content.lower()
 
+    referenced_content = ""
+    if message.reference and message.reference.message_id:
+        try:
+            # Fetch the referenced message
+            referenced_msg = await message.channel.fetch_message(message.reference.message_id)
+            referenced_content = f"\n[Context: {referenced_msg.author.display_name} said: \"{referenced_msg.content}\"]"
+            print(f"📎 Luna can see referenced message from {referenced_msg.author.display_name}")
+        except:
+            pass
+
     # Check if Luna is mentioned or tagged
     luna_mentioned = (
         bot.user in message.mentions  # Direct @mention
@@ -253,12 +267,15 @@ async def on_message(message):
     if not luna_mentioned:
         return
     
+    # Combine user's message with referenced context for AI
+    full_context = content + referenced_content
+    
     print(f"🌙 Luna mentioned in: {content}")
     
     if check_disrespectful_behavior(content):
         print(f"DISRESPECTFUL BEHAVIOR detected: {content}")
         async with message.channel.typing():
-            ai_response = await generate_ai_response(content, message.author.display_name, "disrespect", "sassy")
+            ai_response = await generate_ai_response(full_context, message.author.display_name, "disrespect", "sassy")
         
         if ai_response:
             # Add tagging to sassy responses
@@ -277,7 +294,7 @@ async def on_message(message):
     elif check_emotional_keywords(content):
         print(f"EMOTIONAL SUPPORT detected: {content}")
         async with message.channel.typing():
-            ai_response = await generate_ai_response(content, message.author.display_name, "emotional_support")
+            ai_response = await generate_ai_response(full_context, message.author.display_name, "emotional_support")
         
         if ai_response:
             await message.channel.send(ai_response)
@@ -292,7 +309,7 @@ async def on_message(message):
     elif any(re.search(rf'\b{advice}\b', content) for advice in advice_requests):
         print(f"ADVICE REQUEST detected: {content}")
         async with message.channel.typing():
-            ai_response = await generate_ai_response(content, message.author.display_name, "advice")
+            ai_response = await generate_ai_response(full_context, message.author.display_name, "advice")
         
         if ai_response:
             await message.channel.send(ai_response)
@@ -307,7 +324,7 @@ async def on_message(message):
     elif any(re.search(rf'\b{space}\b', content) for space in space_topics):
         print(f"SPACE TOPIC detected: {content}")
         async with message.channel.typing():
-            ai_response = await generate_ai_response(content, message.author.display_name, "space_topic")
+            ai_response = await generate_ai_response(full_context, message.author.display_name, "space_topic")
         
         if ai_response:
             await message.channel.send(ai_response)
@@ -319,7 +336,7 @@ async def on_message(message):
     elif any(re.search(rf'\b{welfare_word}\b', content) for welfare_word in welfare):
         print(f"WELFARE detected: {content}")
         async with message.channel.typing():
-            ai_response = await generate_ai_response(content, message.author.display_name, "welfare")
+            ai_response = await generate_ai_response(full_context, message.author.display_name, "welfare")
         
         if ai_response:
             await message.channel.send(ai_response)
@@ -338,7 +355,7 @@ async def on_message(message):
         # For simple greetings, use AI only 50% of the time to reduce load
         if random.random() < 0.5:
             async with message.channel.typing():
-                ai_response = await generate_ai_response(content, message.author.display_name, "greeting")
+                ai_response = await generate_ai_response(full_context, message.author.display_name, "greeting")
         else:
             ai_response = None  # Skip AI, use templates
         
@@ -361,7 +378,7 @@ async def on_message(message):
         async with message.channel.typing():
             # Enhanced prompt for natural conversation
             conversation_type = "general_conversation"
-            ai_response = await generate_ai_response(content, message.author.display_name, conversation_type)
+            ai_response = await generate_ai_response(full_context, message.author.display_name, conversation_type)
         
         if ai_response:
             await message.channel.send(ai_response)
