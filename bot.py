@@ -250,19 +250,26 @@ async def on_message(message):
     content = message.content.lower()
 
     referenced_content = ""
+    referenced_is_luna = False
+    
     if message.reference and message.reference.message_id:
         try:
             # Fetch the referenced message
             referenced_msg = await message.channel.fetch_message(message.reference.message_id)
-            referenced_content = f"\n[Context: {referenced_msg.author.display_name} said: \"{referenced_msg.content}\"]"
-            print(f"📎 Luna can see referenced message from {referenced_msg.author.display_name}")
+            
+            # Check if the referenced message is from Luna
+            if referenced_msg.author == bot.user:
+                referenced_is_luna = True
+            else:
+                # Only add context if it's NOT Luna's message
+                referenced_content = f"\n[Context: {referenced_msg.author.display_name} said: \"{referenced_msg.content}\"]"
+                print(f"📎 Luna can see referenced message from {referenced_msg.author.display_name}")
         except:
             pass
 
     # Check if Luna is mentioned or tagged
-    luna_mentioned = (
-        bot.user in message.mentions and message.reference is None  # Direct @mention
-    )
+    # Only respond to @mentions, not replies to Luna's messages
+    luna_mentioned = bot.user in message.mentions and not referenced_is_luna
     
     if not luna_mentioned:
         return
