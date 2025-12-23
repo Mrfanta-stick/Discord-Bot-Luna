@@ -1,17 +1,19 @@
-# 🌙 Luna - Discord Bot
+# 👑 Lulu - Discord Bot
 
-Luna is an AI-powered Discord bot with a cheerful moon spirit personality. She provides interactive conversations, space facts, horoscopes, and emotional support powered by Google's Gemini 2.0 Flash Lite.
+Lulu is an AI-powered Discord bot with a sassy queen personality. She provides savage conversations, berry facts, horoscopes, and emotional support powered by Google's Gemini 2.5 Flash Lite.
 
 ## ✨ Features
 
 - **🤖 AI Conversations**: Powered by Gemini 2.5 Flash Lite (1000 RPD, 15 RPM)
-- **🌙 Moon Spirit Personality**: Cheerful, wise, mystical, and playful
+- **👑 Sassy Queen Personality**: Bold, savage, playful, and unapologetically confident
 - **Interactive Commands**: 
-  - `/spacefact` - Get interesting space and moon facts
-  - `/horoscope` - Daily horoscopes with zodiac sign selection
+  - `/berryfact` - Get sassy berry facts with attitude
+  - `/horoscope` - Daily horoscopes with zodiac sign selection (and sass)
   - `!sync` - Sync slash commands (admin)
 - **💬 Smart Interactions**: Detects greetings, emotional support needs, and disrespectful behavior
-- **🎭 Mood Variations**: Sassy responses to disrespect, supportive for emotional needs
+- **🎭 Mood Variations**: Savage responses to disrespect, genuine support for emotional needs
+- **🔥 Chat Revival**: Automatically revives dead chats with philosophical roasts every 5 hours
+- **💅 Random Responses**: 10% chance to jump into active conversations with attitude
 
 ## 🚀 Quick Deploy to Railway
 
@@ -91,27 +93,31 @@ Make sure your bot has these Discord permissions:
 ## 🤖 Commands
 
 ### Slash Commands
-- `/spacefact` - Get a random space/moon fact from Luna
-- `/horoscope` - Select your zodiac sign and get a daily horoscope
+- `/berryfact` - Get a sassy berry fact with attitude from Lulu
+- `/horoscope` - Select your zodiac sign and get a daily horoscope (with sass)
 
 ### Text Commands
 - `!sync` - Sync slash commands with Discord (admin/bot owner only)
 
 ### Natural Interactions
-- **Greetings**: Luna responds to hi, hello, hey, etc.
-- **Emotional Support**: Detects when you're feeling down and offers support
-- **Space Topics**: Ask about space, moon, planets, stars, etc.
-- **Advice Requests**: Ask Luna for advice or opinions
-- **Welfare Checks**: Ask how Luna is doing
+- **Greetings**: Lulu responds with savage greetings and attitude
+- **Emotional Support**: Detects when you're hurting and offers GENUINE support (no sass)
+- **Slay Topics**: Mention slay, queen, king, serve, iconic, etc. for savage responses
+- **Berry Topics**: Talk about berries and get sassy facts
+- **Advice Requests**: Ask Lulu for advice (expect attitude with wisdom)
+- **Welfare Checks**: Ask how Lulu is doing (she's thriving, obviously)
+- **Mentions**: Tag @Lulu to get her attention
+- **Random Responses**: 10% chance she'll jump into active chats
 
-## 🌙 Luna's Personality
+## 👑 Lulu's Personality
 
-Luna is a **cheerful moon spirit** who:
-- 🌕 Is always energized by the moon's presence worldwide
-- ✨ Speaks mystically with moon emojis
-- 💫 Offers wisdom and playful banter
-- 🎭 Gets sassy when disrespected (but stays sophisticated)
-- 💖 Provides emotional support when needed
+Lulu is a **sassy savage queen** who:
+- 💅 Has zero filter and speaks her mind with attitude
+- 🔥 Roasts people playfully with unmatched style
+- 😏 Revives dead chats with savage energy
+- 💀 Uses gen-z slang and stays iconic
+- 💕 Drops ALL sass for genuine emotional support when needed
+- 🌿 Connects to nature (her spiritual side)
 
 ## 📊 Rate Limits
 
@@ -164,4 +170,4 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ---
 
-**Made with 🌙 by the Luna development team**
+**Made with 💅 by the Lulu development team**

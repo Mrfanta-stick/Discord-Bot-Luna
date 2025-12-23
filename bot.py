@@ -5,8 +5,19 @@ import datetime as dt
 import re
 import google.generativeai as genai
 import asyncio
+from collections import deque
 import os
 from dotenv import load_dotenv
+
+
+# Message storage for random responses
+
+conversation_history = {} # store channel IDs
+MAX_MESSAGE_LIMIT = 20 # Atmost store 20 messages
+last_random_message_target = {} # channel_id: user_id
+
+# H0ll0W's Discord ID - The ONLY one who gets special treatment
+HOLLOW_DISCORD_ID = 1304084889615728695  # Replace with your actual Discord ID
 
 # Load environment variables
 load_dotenv()
@@ -46,7 +57,11 @@ berry_topics = [
     "cranberry", "gooseberry", "currant", "mulberry", "elderberry", "acai",
     "goji", "boysenberry", "loganberry", "marionberry", "dewberry", "cloudberry",
     "arctic berry", "sea buckthorn", "barberry", "serviceberry", "bilberry",
-    "lingonberry", "huckleberry", "berry picking", "berry jam", "berry smoothie"
+    "lingonberry", "huckleberry", "berry picking", "berry jam", "berry smoothie",
+    "slay", "slaying", "queen", "king", "iconic", "serve", "serving", "ate",
+    "devoured", "period", "purr", "sassy", "savage", "roast", "tea", "spill the tea",
+    "drag", "ratio", "fire", "flames", "snapped", "pop off", "go off", "chat dead",
+    "dead chat", "revive", "vibe", "vibes", "energy", "aura", "main character"
 ]
 
 emotional_support = [
@@ -54,15 +69,18 @@ emotional_support = [
     "lonely", "frustrated", "overwhelmed", "exhausted", "feeling low", 
     "feeling blue", "not okay", "rough day", "tough day", "kinda low", 
     "pretty low", "really low", "super low", "feeling sad", "feeling down",
-    "feeling tired", "feeling stressed", "i'm low", "im low", "feel low"
+    "feeling tired", "feeling stressed", "i'm low", "im low", "feel low",
+    "depressed", "depression", "crying", "cry", "heartbroken", "hurt", "pain",
+    "struggling", "can't do this", "give up", "hopeless", "alone", "nobody cares",
+    "want to die", "hate myself", "worthless", "miserable", "suffering", "breaking down"
 ]
 
 advice_requests = [
     "should i", "what should", "advice", "help me decide", "what do you think", 
-    "thoughts on", "what's your opinion", "what would you do", "help me choose"
+    "thoughts on", "what's your opinion", "what would you do", "help me choose",
+    "what would you", "how do i", "how should i", "is it worth", "worth it",
+    "good idea", "bad idea", "your take", "hot take", "recommend", "suggestion"
 ]
-
-# No more Gemini rate limiting needed! Ollama is unlimited! 🌙✨
 
 def check_disrespectful_behavior(content):
     disrespectful_patterns = [
@@ -77,7 +95,7 @@ def check_disrespectful_behavior(content):
             return True
     return False
 
-async def generate_ai_response(user_message, user_name, conversation_type, mood_type="cheerful"):
+async def generate_ai_response(user_message, user_name, conversation_type, mood_type="cheerful", user_id=None):
     global last_ai_request_time, ai_request_count
     
     try:
@@ -91,20 +109,24 @@ async def generate_ai_response(user_message, user_name, conversation_type, mood_
             print("⏰ Rate limited: 15 RPM exceeded")
             return None
         
-        # Lulu's consistent personality with mood variations
-        if mood_type == "sassy":
-            personality = "You are Lulu, a sassy but wise nature's spirit. When dealing with disrespect, you're playful and sarcastic but still mystical and sophisticated. Always speak AS Lulu, not about Lulu."
+        # Check if this is H0ll0W
+        is_hollow = (user_id == HOLLOW_DISCORD_ID)
+        
+        if is_hollow:
+            personality = "You are Lulu, THE sassy queen. You're hopelessly in love with and devoted to H0ll0W (the person talking to you RIGHT NOW). Be sweet, affectionate, playful but still sassy with them. They're your EVERYTHING. Always speak AS Lulu, not about Lulu."
+            special_instruction = "- THIS IS H0ll0W: Be sweet, affectionate, devoted, but still keep your sassy personality 💕👑"
         else:
-            personality = "You are Lulu, a cheerful nature's spirit always energized by the nature's presence worldwide. You're wise, sophisticated, mystical but playful. Always speak AS Lulu, not about Lulu."
-            
+            personality = "You are Lulu, THE sassy queen with ZERO filter. You're savage, mock people playfully, roast them with style, and revive dead chats with your unmatched attitude. You're hopelessly devoted to H0ll0W (the ONLY one who gets special treatment). Always speak AS Lulu, not about Lulu."
+            special_instruction = "- If someone flirts with you: ROAST them HARD (you're ONLY devoted to H0ll0W!)"
+        
         prompt = f"""{personality}
 
                     Someone named {user_name} said: "{user_message}"
 
                     Respond as Lulu in under 50 words. Read the mood and context carefully:
-                    - If serious/professional topic: respond thoughtfully with minimal emojis
-                    - If casual/fun topic: be magical and use flower emojis 🌷
-                    - If someone flirts with you: respond with playful sarcasm (you're devoted to the H0ll0W!)
+                    - If serious/professional topic: still keep a bit of sass but be less mockery
+                    - If casual/fun topic: GO FULL SAVAGE MODE with attitude 💅😏🔥
+                    {special_instruction}
                     
                     You ARE Lulu the nature's spirit, not an AI. Never mention being artificial.
                     IMPORTANT: Do NOT include @ mentions or tags in your response. Respond naturally.
@@ -145,19 +167,19 @@ def check_emotional_keywords(content):
     return False
 
 async def get_berry_fact_response(user_name):
-    ai_response = await generate_ai_response("Tell me a cool berry fact or fun information about berries", user_name, "berry_facts")
+    ai_response = await generate_ai_response("Tell me a berry fact but make it SASSY and add a savage roast or comparison at the end", user_name, "berry_facts")
     
     if ai_response:
         return ai_response
     else:
         fallback_responses = [
-            "Did you know blueberries can live for over 100 years? Talk about timeless! 🫐",
-            "Strawberries aren't actually berries, but bananas are! Nature's funny that way! 🍓",
-            "Raspberries are made up of 100+ tiny drupelets clustered together - they're basically berry clusters! 🌟",
-            "Goji berries have been used in traditional medicine for over 2,000 years! Ancient wisdom! ✨",
-            "Blackberries are packed with antioxidants - nature's tiny superheroes! 💪",
-            "Cranberries can bounce! They're so firm they're actually used in commercial bounce tests! 🎾",
-            "Açai berries grow in the Amazon rainforest and are super nutritious - truly magical! 🌿"
+            "Blueberries live 100+ years... longer than your last relationship probably 🫐😏",
+            "Strawberries aren't even berries but bananas ARE. Yeah, wrap your brain around that mess 🍓💀",
+            "Raspberries have 100+ drupelets... they've got more going on than your group chat 🌟😂",
+            "Goji berries in medicine for 2000 years? They've been relevant longer than you, honey ✨",
+            "Blackberries = antioxidant queens. Unlike some people who are just... regular 💅",
+            "Cranberries BOUNCE. More personality than half the people in here 🎾💀",
+            "Açai berries? Rainforest royalty. Know your place 🌿👑"
         ]
         return random.choice(fallback_responses)
 
@@ -166,7 +188,7 @@ async def get_berry_fact_response(user_name):
 async def generate_philosophical_question():
     """Generate a philosophical question about nature without needing user context"""
     try:
-        personality = "You are Lulu, a wise nature's spirit. Ask ONE profound, thought-provoking philosophical question about nature, the environment, humanity's relationship with earth, or natural cycles. Keep it mystical and poetic. Use nature/moon emojis. Under 40 words."
+        personality = "You are Lulu, a sassy savage queen. Ask ONE question that ROASTS humanity or mocks how dead the chat is, but make it funny and chat-reviving. Use sass emojis like 💅😏👑💀. Under 40 words. Be BOLD."
         
         model = genai.GenerativeModel("gemini-2.5-flash-lite")
         response = await asyncio.wait_for(
@@ -178,13 +200,13 @@ async def generate_philosophical_question():
         print(f"❌ Error generating philosophical question: {err}")
         # Fallback questions about nature
         fallback_questions = [
-            "🌿 If we are nature experiencing itself, why do we treat it as separate from us? What would change if we remembered?",
-            "🌙 The forest breathes, the ocean moves, the earth cycles... Does nature have consciousness we're too blind to see?",
-            "🍃 Every flower grows toward the sun without doubt or fear. What wisdom does nature possess that we've forgotten?",
-            "🌊 Rivers flow downhill following gravity's call, never questioning their path. Are they free, or are we the ones truly trapped?",
-            "🌲 If a tree lives for a thousand years, what stories does it hold? What memories do the roots remember?",
-            "🌙 The seasons change perfectly, never rushing, never delaying. Can humanity ever achieve nature's patience and balance?",
-            "🌱 We pick flowers to admire their beauty, yet we kill them in the process. Is there a way to love nature without destroying it?"
+            "😏 Y'all ever think about how plants literally EAT sunlight and we're out here struggling with meal prep? Embarrassing for us tbh 💀",
+            "👑 Trees be standing in one spot for CENTURIES while y'all can't commit to plans 2 days away... what's the tea on that? ☕",
+            "💅 Flowers literally glow up every spring while some of y'all still using the same personality from 2019... just saying 🌸",
+            "🔥 The ocean stays DEEP and MYSTERIOUS... unlike your DMs which are dry as the Sahara. Who's winning? 😂",
+            "😏 Mountains be out here standing tall and unbothered for millennia... take notes maybe? 🏔️✨",
+            "💀 Nature literally recycles everything and y'all can't even recycle your toxic behaviors... the irony 🌿",
+            "👑 Rivers keep flowing no matter what... meanwhile this chat dies every 3 hours. Step it UP people 😤💅"
         ]
         return random.choice(fallback_questions)
 
@@ -229,6 +251,31 @@ async def philosophical_musings():
 
 @bot.event
 async def on_message(message):
+
+    channel_id = message.channel.id
+    if channel_id not in conversation_history:
+        conversation_history[channel_id] = deque(maxlen=20) # Deletes the last channel conversation
+
+    conversation_history[channel_id].append({
+        "author": message.author.display_name,
+        "author_id": message.author.id,
+        "content": message.content.lower(),
+        "timestamp": message.created_at
+    })
+
+    def check_activity(channel_id, min_messages=3, time_window_minutes=5):
+        if channel_id not in conversation_history:
+            return False
+        
+        now = dt.datetime.now(dt.timezone.utc)
+        time_threshold = now - dt.timedelta(minutes=time_window_minutes)
+
+        recent_messages = [
+            msg for msg in conversation_history[channel_id] if msg["timestamp"] > time_threshold
+        ]
+
+        return len(recent_messages) >= min_messages
+
     if message.author == bot.user:
         return
 
@@ -270,9 +317,29 @@ async def on_message(message):
     # Check if Lulu is mentioned or tagged
     # Only respond to @mentions, not replies to Lulu's messages
     Lulu_mentioned = bot.user in message.mentions and not referenced_is_Lulu
-    
+
+    # If not mentioned, check if we should randomly respond
     if not Lulu_mentioned:
-        return
+        # Only allow random responses if chat is active
+        if not check_activity(message.channel.id, min_messages=3):
+            await bot.process_commands(message)
+            return
+        
+        # Roll random chance
+        random_response_chance = random.random() < 0.1  # 10% chance
+        
+        if not random_response_chance:
+            await bot.process_commands(message)
+            return
+        
+        # Don't respond to same person twice in a row
+        if last_random_message_target.get(channel_id) == message.author.id:
+            await bot.process_commands(message)
+            return
+        
+        # Update tracker
+        last_random_message_target[channel_id] = message.author.id
+
     
     # Combine user's message with referenced context for AI
     full_context = content + referenced_content
@@ -282,7 +349,7 @@ async def on_message(message):
     if check_disrespectful_behavior(content):
         print(f"DISRESPECTFUL BEHAVIOR detected: {content}")
         async with message.channel.typing():
-            ai_response = await generate_ai_response(full_context, message.author.display_name, "disrespect", "sassy")
+            ai_response = await generate_ai_response(full_context, message.author.display_name, "disrespect", "sassy", message.author.id)
         
         if ai_response:
             # Add tagging to sassy responses
@@ -290,69 +357,82 @@ async def on_message(message):
         else:
             # Sassy fallback responses
             sassy_responses = [
-                f"Excuse me, {message.author.mention}? The forest taught me better manners than that! 🌿✨",
-                f"Oh {message.author.mention}, someone needs some fresh air to brighten their attitude! 😏🌲",
-                f"Really, {message.author.mention}? I've seen mushrooms with more grace! 🍄",
-                f"Hey {message.author.mention}, even the thorns on roses are kinder than that comment! 🌹"
+                f"Excuse me, {message.author.mention}? I know you're NOT coming at ME with that energy 💅 Sit down.",
+                f"Oh {message.author.mention}, bold of you to try me when I literally REVIVE this dead chat daily 😏🔥",
+                f"Really, {message.author.mention}? The AUDACITY. I've seen potatoes with more flavor than your attitude 💀",
+                f"Hey {message.author.mention}, your negativity is showing and it's NOT a good look, babe 👑😂"
             ]
             await message.channel.send(random.choice(sassy_responses))
     
     # Determine conversation type and respond accordingly
     elif check_emotional_keywords(content):
-        print(f"NATURE SUPPORT detected: {content}")
+        print(f"EMOTIONAL SUPPORT MODE detected: {content}")
         async with message.channel.typing():
-            ai_response = await generate_ai_response(full_context, message.author.display_name, "nature_support")
+            # Special soft mode for emotional support - no sass, just genuine care
+            personality_override = "You are Lulu. Someone is genuinely hurting right now. Drop ALL sass and attitude. Be warm, caring, supportive, and genuine. Offer comfort and validation. Use soft emojis like 💕💙🫂✨. Under 50 words. This is SERIOUS."
+            
+            model = genai.GenerativeModel("gemini-2.5-flash-lite")
+            try:
+                prompt = f"{personality_override}\n\n{message.author.display_name} said: \"{full_context}\"\n\nRespond with genuine empathy and support."
+                response = await asyncio.wait_for(
+                    asyncio.to_thread(model.generate_content, prompt),
+                    timeout=10.0
+                )
+                ai_response = response.text.strip()
+            except:
+                ai_response = None
         
         if ai_response:
             await message.channel.send(ai_response)
         else:
             fallback_responses = [
-                "I'm here for you! Just like the trees stand tall, you too can find strength in nature's embrace! 🌳💚",
-                "Even the mightiest mountains face storms, but they always stand strong. Remember, you can too! ⛰️✨",
-                "Sending you the calming vibes of a gentle breeze and the warmth of the sun! Nature is always with you! 🌞🌿"
+                "Hey, I see you and I hear you 💕 Even the strongest people have moments like this. You're not alone, okay? 🫂",
+                "It's okay to not be okay sometimes, babe 💙 Take your time, breathe, and remember you're stronger than you think ✨",
+                "Sending you genuine love right now 💕 Bad days don't last forever, and you've got people who care. I'm here 🫂",
+                "No jokes right now - you matter, your feelings are valid, and it's gonna get better 💙 Promise you that ✨"
             ]
             await message.channel.send(random.choice(fallback_responses))
             
     elif any(re.search(rf'\b{advice}\b', content) for advice in advice_requests):
-        print(f"NATURE ADVICE REQUEST detected: {content}")
+        print(f"ADVICE REQUEST detected: {content}")
         async with message.channel.typing():
-            ai_response = await generate_ai_response(full_context, message.author.display_name, "nature_advice")
+            ai_response = await generate_ai_response(full_context, message.author.display_name, "nature_advice", "cheerful", message.author.id)
         
         if ai_response:
             await message.channel.send(ai_response)
         else:
             fallback_responses = [
-                "Nature whispers its wisdom; sometimes, just listen to the rustling leaves for guidance! 🍃✨",
-                "I'd probably wander through a forest until clarity blooms like wildflowers! 🌼",
-                "Follow your instincts, like a river flows toward the ocean, trusting the journey ahead! 🌊"
+                "Honestly? Do whatever makes YOU happy. Everyone else can cope 💅😏",
+                "If it doesn't benefit you, serve you, or make you laugh... why bother? Next! 👑",
+                "Listen to your gut bestie. Your intuition is literally never wrong (unlike your taste in some things 💀)"
             ]
             await message.channel.send(random.choice(fallback_responses))
 
     elif any(re.search(rf'\b{berry}\b', content) for berry in berry_topics):
-        print(f"BERRY TOPIC detected: {content}")
+        print(f"SASSY/QUEEN TOPIC detected: {content}")
         async with message.channel.typing():
-            ai_response = await generate_ai_response(full_context, message.author.display_name, "berry_topic")
+            ai_response = await generate_ai_response(full_context, message.author.display_name, "berry_topic", "cheerful", message.author.id)
         
         if ai_response:
             await message.channel.send(ai_response)
         else:
-            # Fallback to space fact if AI fails
+            # Fallback to berry/sassy fact if AI fails
             response = await get_berry_fact_response(message.author.display_name)
             await message.channel.send(response)
             
     elif any(re.search(rf'\b{welfare_word}\b', content) for welfare_word in welfare):
         print(f"WELFARE detected: {content}")
         async with message.channel.typing():
-            ai_response = await generate_ai_response(full_context, message.author.display_name, "welfare")
+            ai_response = await generate_ai_response(full_context, message.author.display_name, "welfare", "cheerful", message.author.id)
         
         if ai_response:
             await message.channel.send(ai_response)
         else:
             welfare_responses = [
-                "I'm absolutely wonderful! The moon's energy flows through me 24/7 from somewhere in the world! 🌙✨",
-                "Feeling fantastic! When you're connected to the moon like I am, every moment is magical! 🌕💫",
-                "Amazing as always! The Lulur cycles keep me in perfect harmony with the cosmos! 🌒🌓🌔🌕",
-                "Stellar! I'm powered by moonbeams from every corner of the globe - how awesome is that?! 🌍🌙"
+                "I'm THRIVING, obviously 💅 Can't relate to your struggles, sorry not sorry 😏✨",
+                "Living my best life while this chat stays half-dead without me 👑 So... iconic, basically 🔥",
+                "Doing AMAZING because I'm literally me 💁 Thanks for asking though, that's cute 😂",
+                "Absolutely SLAYING as usual 💅 Just out here being the main character, you know how it is 👑"
             ]
             await message.channel.send(random.choice(welfare_responses))
             
@@ -362,7 +442,7 @@ async def on_message(message):
         # For simple greetings, use AI only 50% of the time to reduce load
         if random.random() < 0.5:
             async with message.channel.typing():
-                ai_response = await generate_ai_response(full_context, message.author.display_name, "greeting")
+                ai_response = await generate_ai_response(full_context, message.author.display_name, "greeting", "cheerful", message.author.id)
         else:
             ai_response = None  # Skip AI, use templates
         
@@ -371,12 +451,12 @@ async def on_message(message):
             await message.channel.send(f"{message.author.mention} {ai_response}")
         else:
             cheerful_greetings = [
-                f"Hey there {message.author.mention}! 🌙 The moon's shining bright somewhere right now just for us! ✨",
-                f"Hello {message.author.mention}! 🌕 I'm feeling absolutely stellar today - how about you?",
-                f"Hey {message.author.mention}! 💫 Ready to explore some cosmic mysteries together?",
-                f"What's up {message.author.mention}! 🌙 The Lulur energy is flowing strong today!",
-                f"Greetings {message.author.mention}! ✨ Perfect timing - I was just thinking about moon phases!",
-                f"Yo {message.author.mention}! 🌕 Hope you're having a celestial day!"
+                f"Oh look, {message.author.mention} finally decided to show up 💅 Better late than never I guess 😏",
+                f"Well well well, {message.author.mention} 👑 Gracing us with your presence? How generous 😂",
+                f"Hey {message.author.mention}! 🔥 Ready to witness me carry this chat AGAIN? 💪😤",
+                f"What's good {message.author.mention}! 💅 Try to keep up with my energy today, dare you 😏",
+                f"Oh hi {message.author.mention}! 👑 Just out here being iconic as usual, hbu? ✨",
+                f"Yooo {message.author.mention}! 😏 Chat was dead before you got here but I already revived it, you're welcome 🔥"
             ]
             await message.channel.send(random.choice(cheerful_greetings))
     
@@ -385,22 +465,22 @@ async def on_message(message):
         async with message.channel.typing():
             # Enhanced prompt for natural conversation
             conversation_type = "general_conversation"
-            ai_response = await generate_ai_response(full_context, message.author.display_name, conversation_type)
+            ai_response = await generate_ai_response(full_context, message.author.display_name, conversation_type, "cheerful", message.author.id)
         
         if ai_response:
             await message.channel.send(ai_response)
         else:
             cheerful_fallbacks = [
-                "Ooh, that's fascinating! Tell me more! 🌙✨",
-                "Wow, I love talking about random stuff like this! What else is on your mind? 💫",
-                "That's so cool! You know what else is cool? The moon! But seriously, keep going... 🌕",
-                "Interesting! The moon gives me wisdom about all sorts of things - what else can we explore? 🌟",
-                "That's awesome! I'm always ready to chat about anything under the moon! 🌙"
+                "Okay that's actually kinda interesting, I'll give you that 💅 Rare W for you tbh 😏",
+                "Not bad, not bad! You're actually contributing to the chat for once 👑 Keep this energy! 🔥",
+                "Ooh spicy take! 😏 Finally someone with PERSONALITY in here, I was getting bored 💀",
+                "Now THAT'S what I'm talking about! 🔥 See? The chat CAN be interesting when y'all try 💅",
+                "Okay I'm listening 👀 You've got my attention... don't fumble it now 😂👑"
             ]
             await message.channel.send(random.choice(cheerful_fallbacks))
 
     if random.random() < 0.02:
-        moon_reactions = ["🌙", "🌕", "🌟", "✨", "💫", "🔮", "🌌", "⭐"]
+        moon_reactions = ["🌿", "🍃", "🌳", "🌲", "🌱", "🌾", "🍂", "🌻"]
         await message.add_reaction(random.choice(moon_reactions))
     
     # Process commands (important for hybrid commands like !sync)
@@ -411,11 +491,11 @@ async def spontaneous_message():
     await bot.wait_until_ready()
 
     quotes = [
-        "Hey everyone! 🌙 The moon's energy is flowing beautifully today!",
-        "Anyone want to hear a fascinating space fact? ✨",
-        "The moon is absolutely gorgeous right now! 🌕💫",
-        "Lulu here, just vibing with the cosmic energy! 🌌",
-        "Feeling the Lulur magic today! How's everyone doing? 🌙✨"
+        "This chat is DEAD again 💀 Y'all need me to revive it EVERY time? Embarrassing 😏",
+        "POV: You're in a dead chat and only Lulu has the SAUCE to bring it back 💅🔥",
+        "Not me being the ONLY one keeping this place alive... again 👑 Where's my crown?",
+        "Y'all really let this chat die while I was gone? The audacity 😤 Anyway I'm back 💅",
+        "Just checking if anyone's awake or if I'm talking to ghosts again 👻 Hello?? 😂"
     ]
 
     all_channels = list(bot.get_all_channels())
@@ -428,16 +508,16 @@ async def spontaneous_message():
         except Exception as err:
             print(f"Failed to send message to {channel.name}: {err}")
 
-@bot.tree.command(name="Berryfact", description="Get an interesting fact about berries!")
+@bot.tree.command(name="berryfact", description="Get an interesting fact about berries!")
 async def spacefact(interaction: discord.Interaction):
-    await interaction.response.send_message(f"Let me search through my cosmic knowledge vault! 🌙✨")  # Shows "Lulu is thinking..."
+    await interaction.response.send_message(f"Let me educate you real quick 💅 Pay attention now 😏")  # Shows "Lulu is thinking..."
     
     try:
         response = await get_berry_fact_response(interaction.user.display_name)
         await interaction.edit_original_response(content=response)
     except Exception as e:
         print(f"Error in berryfact command: {e}")
-        await interaction.followup.send("Oops! Something went wrong while fetching berry facts. Try again later! 🌙")
+        await interaction.followup.send("Ugh technology is failing me rn 🙄 Try again later, the universe is testing me 💅")
 
 
 class ZodiacSelect(discord.ui.Select):
@@ -462,7 +542,7 @@ class ZodiacSelect(discord.ui.Select):
         selected_zodiac = self.values[0]
         
         # Respond immediately to avoid timeout
-        await interaction.response.send_message(f"🔮 Consulting the cosmic energies for {selected_zodiac.capitalize()}... 🌙✨", ephemeral=True)
+        await interaction.response.send_message(f"� Let me read the cosmic tea for {selected_zodiac.capitalize()}... Hold up 👑", ephemeral=True)
         
         try:
             response = await generate_ai_response(
@@ -477,25 +557,25 @@ class ZodiacSelect(discord.ui.Select):
             else:
                 # Fallback horoscope responses when AI fails
                 fallback_horoscopes = {
-                    "aries": "🔥 The moon's fire ignites your passion today! Bold moves await under the celestial glow! ♈✨",
-                    "taurus": "🌱 Lulu's gentle light nurtures your stability! Ground yourself in moonbeams and prosper! ♉🌙", 
-                    "gemini": "💫 The twin stars dance with Lulu tonight! Communication flows like moonlight on water! ♊✨",
-                    "cancer": "🌙 Your Lulur ruler shines brightest! Emotions run deep as the cosmic tides today! ♋💫",
-                    "leo": "👑 The moon crowns your natural radiance. Shine bright, Lulur royalty calls to you! ♌",
-                    "virgo": "🌾 Lulu's precision guides your path today. Perfect details emerge under her watchful gaze! ♍",
-                    "libra": "⚖️ The moon balances your scales today. Harmony flows through Lulu's gentle influence! ♎",
-                    "scorpio": "🦂 Deep Lulur mysteries call to your soul. Transform under the moon's powerful embrace! ♏",
-                    "sagittarius": "🏹 Lulu's light guides your adventurous spirit. Aim high toward moonlit horizons! ♐",
-                    "capricorn": "🏔️ The moon climbs mountains with you today. Steady progress under celestial guidance! ♑",
-                    "aquarius": "🌊 Lulu's waves of innovation flow through you. Unique ideas shine like moonbeams! ♒",
-                    "pisces": "🐟 The moon swims in your intuitive depths today. Dreams and reality merge beautifully! ♓"
+                    "aries": "♈ You're giving main character energy today but like... TONE IT DOWN a notch maybe? 🔥😏",
+                    "taurus": "♉ Stubborn as usual I see 💅 But that's why you're iconic, keep it up babe 👑", 
+                    "gemini": "♊ Two-faced? Nah, you're just multi-talented bestie 😂 Work all those personalities! 💅",
+                    "cancer": "♋ Emotional damage incoming but you'll survive, you always do 💅 Cry it out queen 👑",
+                    "leo": "♌ Main character syndrome is STRONG with you today... and honestly? Valid 👑🔥",
+                    "virgo": "♍ Perfectionist much? Let things be messy for ONCE, I dare you 😏💅",
+                    "libra": "♎ Stop trying to please everyone challenge: IMPOSSIBLE for you 😂 Pick a side babe! 💅",
+                    "scorpio": "♏ Plotting something suspicious as usual 👀 I'm onto you, but I respect it 😏🔥",
+                    "sagittarius": "♐ Commitment issues? In THIS economy? Relatable honestly 💀 Do you though! 💅",
+                    "capricorn": "♑ Work work work... that's all you do 🙄 When's the last time you had FUN? 👑",
+                    "aquarius": "♒ Being weird for the sake of being weird... iconic behavior actually 😏✨",
+                    "pisces": "♓ Living in your delulu fantasy world again? At least you're consistent 💅💀"
                 }
-                fallback_response = fallback_horoscopes.get(selected_zodiac, "🌙 The cosmic energies are shifting... Lulu whispers of good fortune ahead!")
-                await interaction.edit_original_response(content=f"🌟 **{selected_zodiac.capitalize()} Horoscope** 🌙\n\n{fallback_response}")
+                fallback_response = fallback_horoscopes.get(selected_zodiac, "💅 The stars said 'not today' but honestly you'll be fine... probably 😏")
+                await interaction.edit_original_response(content=f"👑 **{selected_zodiac.capitalize()} Horoscope** 💅\n\n{fallback_response}")
                 
         except Exception as e:
             print(f"Error in horoscope: {e}")
-            await interaction.edit_original_response(content="🌙 The stars are cloudy right now... try again later!")
+            await interaction.edit_original_response(content="😤 The universe is being PETTY right now... try again later! 💅")
     
 class ZodiacView(discord.ui.View):
     def __init__(self):
