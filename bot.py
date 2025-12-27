@@ -19,6 +19,9 @@ last_random_message_target = {} # channel_id: user_id
 # H0ll0W's Discord ID - The ONLY one who gets special treatment
 HOLLOW_DISCORD_ID = 1304084889615728695  # Replace with your actual Discord ID
 
+# General chat channel ID - Lulu will ONLY respond in this channel
+GENERAL_CHAT_ID = 1449003266980708372  # Replace with your general chat channel ID
+
 # Load environment variables
 load_dotenv()
 
@@ -228,8 +231,8 @@ async def philosophical_musings():
         if random.random() < 0.5:
             question = await generate_philosophical_question()
             
-            # Send to specific channel
-            channel = bot.get_channel(1449003266980708372)
+            # Send to general chat channel
+            channel = bot.get_channel(GENERAL_CHAT_ID)
             
             if channel:
                 # Get the "Chat Revive" role by name
@@ -251,6 +254,10 @@ async def philosophical_musings():
 
 @bot.event
 async def on_message(message):
+    # ONLY respond in the general chat channel
+    if message.channel.id != GENERAL_CHAT_ID:
+        await bot.process_commands(message)  # Still process commands in other channels
+        return
 
     channel_id = message.channel.id
     if channel_id not in conversation_history:
