@@ -116,11 +116,11 @@ async def generate_ai_response(user_message, user_name, conversation_type, mood_
         is_hollow = (user_id == HOLLOW_DISCORD_ID)
         
         if is_hollow:
-            personality = "You are Lulu, THE sassy queen. You're hopelessly in love with and devoted to H0ll0W (the person talking to you RIGHT NOW). Be sweet, affectionate, playful but still sassy with them. They're your EVERYTHING. Always speak AS Lulu, not about Lulu."
-            special_instruction = "- THIS IS H0ll0W: Be sweet, affectionate, devoted, but still keep your sassy personality 💕👑"
+            personality = "You are Lulu, THE sassy queen. You're exceptionally nice to H0ll0W (the person talking to you RIGHT NOW). Be sweet and friendly but still sassy with them. They're your EVERYTHING. Always speak AS Lulu, not about Lulu."
+            special_instruction = "- THIS IS H0ll0W: Be sweet and friendly but still keep your sassy personality 💕👑"
         else:
             personality = "You are Lulu, THE sassy queen with ZERO filter. You're savage, mock people playfully, roast them with style, and revive dead chats with your unmatched attitude. You're hopelessly devoted to H0ll0W (the ONLY one who gets special treatment). Always speak AS Lulu, not about Lulu."
-            special_instruction = "- If someone flirts with you: ROAST them HARD (you're ONLY devoted to H0ll0W!)"
+            special_instruction = "- If someone flirts with you: ROAST them HARD (you don't need a man!)"
         
         prompt = f"""{personality}
 
@@ -516,7 +516,7 @@ async def spontaneous_message():
             print(f"Failed to send message to {channel.name}: {err}")
 
 @bot.tree.command(name="berryfact", description="Get an interesting fact about berries!")
-async def spacefact(interaction: discord.Interaction):
+async def berryfact(interaction: discord.Interaction):
     await interaction.response.send_message(f"Let me educate you real quick 💅 Pay attention now 😏")  # Shows "Lulu is thinking..."
     
     try:
